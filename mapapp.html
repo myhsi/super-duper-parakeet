@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Fair Interactive Map</title>
+    <style>
+        :root {
+            --primary: #0055a5;
+            --accent: #e5a823;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 6px;
+        }
+
+        p.subtitle {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Map Canvas Styling */
+        .map-wrapper {
+            position: relative;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .map-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 4 / 3;
+            background: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* Zone layout representations */
+        .zone {
+            position: absolute;
+            background: #dbeafe;
+            border: 1px solid #93c5fd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #1e40af;
+            border-radius: 2px;
+        }
+
+        /* Theater Area & Seating Layout */
+        .zone.theater { 
+            top: 4%; 
+            left: 2%; 
+            width: 48%; 
+            height: 58%; 
+            background: #ffffff; 
+            border: 1px solid #cbd5e1; 
+            display: block;
+        }
+
+        .theater-title {
+            position: absolute;
+            top: 6px;
+            left: 8px;
+            font-size: 0.85rem;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .zone.stage { 
+            top: 4%; 
+            left: 22%; 
+            width: 56%; 
+            height: 14%; 
+            background: #ffffff; 
+            border: 2px solid #3b82f6;
+            color: #2563eb;
+        }
+
+        /* Theater Seating Rows - Side Blocks Tilted Inward at the Top */
+        .seating-row {
+            position: absolute;
+            background-color: #dbeafe;
+            border: 1.5px solid #93c5fd;
+        }
+
+        /* Row 1 Seats */
+        .seat-r1-left { top: 23%; left: 10%; width: 20%; height: 26%; transform: rotate(15deg); }
+        .seat-r1-center { top: 26%; left: 34%; width: 32%; height: 22%; border-radius: 0 0 50% 50% / 0 0 20px 20px; }
+        .seat-r1-right { top: 23%; right: 10%; width: 20%; height: 26%; transform: rotate(-15deg); }
+
+        /* Row 2 Seats */
+        .seat-r2-left { top: 53%; left: 8%; width: 20%; height: 32%; transform: rotate(15deg); }
+        .seat-r2-center { top: 58%; left: 32%; width: 36%; height: 26%; border-radius: 0 0 50% 50% / 0 0 20px 20px; }
+        .seat-r2-right { top: 53%; right: 8%; width: 20%; height: 32%; transform: rotate(-15deg); }
+
+/* Update this rule: */
+        .zone.lobby { 
+            top: 62%; 
+            left: 2%; 
+            width: 48%; 
+            height: 12%; 
+            background: #e0f2fe; 
+            justify-content: flex-start; 
+            padding-left: 12px; 
+        }
+        .zone.restrooms { top: 20%; left: 52%; width: 13%; height: 20%; background: #e2e8f0; color: #475569; }
+        .zone.elevator { top: 55%; left: 50%; width: 15%; height: 19%; background: #e2e8f0; color: #475569; }
+      
+
+        
+        /* Starbucks Area & Internal Storefront */
+        .zone.starbucks-area { 
+            top: 40%; 
+            left: 65%; 
+            width: 33%; 
+            height: 55%; 
+            background: #d1fae5; 
+            border-color: #6ee7b7; 
+            color: #065f46; 
+            display: block;
+        }
+
+        /* Relocated label down ~2/3 of shape */
+        .starbucks-title {
+            position: absolute;
+            top: 70%;
+            left: 8%;
+            font-size: 0.8rem;
+            color: #065f46;
+            font-weight: 600;
+        }
+
+        .storefront-box {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 40%;
+            height: 50%;
+            background: #a7f3d0;
+            border-left: 2px solid #059669;
+            border-bottom: 2px solid #059669;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            color: #065f46;
+            text-align: center;
+            padding: 2px;
+        }
+
+        /* Non-intersecting Square Divider inside Starbucks Area */
+        .square-divider {
+            position: absolute;
+            top: 30%;
+            left: 10%;
+            width: 40%;
+            height: 30%;
+            border: 2px solid #059669;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Courtyard meeting only up to Starbucks Area left edge */
+        .zone.courtyard { 
+            top: 74%; 
+            left: 2%; 
+            width: 63%; 
+            height: 22%; 
+            background: #fef3c7; 
+            border-color: #fde68a; 
+            color: #92400e; 
+            align-items: flex-end;
+            justify-content: flex-start;
+            padding: 8px;
+        }
+
+        /* Doorway Indicators */
+        .doorway {
+            position: absolute;
+            z-index: 5;
+        }
+
+        .door-lobby {
+            top: 73%;
+            left: 36%;
+            width: 20px;
+            height: 6px;
+            border-top: 2px solid #1e293b;
+            border-left: 2px dashed #1e293b;
+            border-right: 2px dashed #1e293b;
+        }
+
+        /* Doorway moved down by ~half a doorway length */
+        .door-starbucks {
+            top: 76.5%;
+            left: 64.4%;
+            width: 6px;
+            height: 18px;
+            border-right: 2px solid #1e293b;
+            border-top: 2px dashed #1e293b;
+            border-bottom: 2px dashed #1e293b;
+        }
+
+        /* Marker Pins */
+        .pin {
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            border: 2px solid #1e293b;
+            color: #1e293b;
+            font-weight: bold;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .pin:hover {
+            transform: translate(-50%, -50%) scale(1.25);
+            background-color: var(--accent);
+            color: #000;
+            z-index: 20;
+        }
+
+        .pin.active {
+            background-color: var(--primary);
+            color: #ffffff;
+            border-color: #ffffff;
+            transform: translate(-50%, -50%) scale(1.3);
+            box-shadow: 0 0 0 3px var(--accent);
+            z-index: 30;
+        }
+
+        .pin.resource {
+            border-color: #2563eb;
+        }
+
+        /* Side Info Panel */
+        .info-panel {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .card {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .card-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .card-category {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-top: 6px;
+        }
+
+        .list-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #f1f5f9;
+            border-radius: 8px;
+        }
+
+        .list-item {
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.15s;
+        }
+
+        .list-item:hover {
+            background: #f1f5f9;
+        }
+
+        .list-item.active {
+            background: #eff6ff;
+            font-weight: 600;
+        }
+
+        .badge {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            color: #0f172a;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .list-item.active .badge {
+            background: var(--primary);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Resource Fair Floor Map</h1>
+        <p class="subtitle">Click on any station number on the map or list to reveal its details</p>
+    </header>
+
+    <div class="container">
+        <!-- Interactive Map area -->
+        <div class="map-wrapper">
+            <div class="map-container" id="map">
+                <!-- Theater Area with Stage & Inward Tilted Seating -->
+                <div class="zone theater">
+                    <span class="theater-title">Theater</span>
+                    <div class="zone stage">Stage</div>
+                    
+                    <!-- Row 1 Seating Blocks -->
+                    <div class="seating-row seat-r1-left"></div>
+                    <div class="seating-row seat-r1-center"></div>
+                    <div class="seating-row seat-r1-right"></div>
+                    
+                    <!-- Row 2 Seating Blocks -->
+                    <div class="seating-row seat-r2-left"></div>
+                    <div class="seating-row seat-r2-center"></div>
+                    <div class="seating-row seat-r2-right"></div>
+                </div>
+
+                <div class="zone lobby">Lobby</div>
+                <div class="zone restrooms">Restrooms</div>
+                <div class="zone elevator">Elevator bay</div>
+                
+                <!-- Doorway Indicators -->
+                <div class="doorway door-lobby" title="Lobby Doors"></div>
+                <div class="doorway door-starbucks" title="Courtyard-Starbucks Door"></div>
+
+                <!-- Starbucks Area -->
+                <div class="zone starbucks-area">
+                    <div class="storefront-box">Starbucks storefront</div>
+                    
+                    <!-- Single Square Divider -->
+                    <div class="square-divider"></div>
+
+                    <!-- Starbucks Area Label positioned ~2/3 down -->
+                    <span class="starbucks-title">Starbucks area</span>
+                </div>
+
+                <!-- Courtyard meeting only up to Starbucks Area left edge -->
+                <div class="zone courtyard">Courtyard</div>
+
+                <!-- Pins will be rendered dynamically -->
+            </div>
+        </div>
+
+        <!-- Info Panel Side area -->
+        <div class="info-panel">
+            <div class="card" id="detailsCard">
+                <div class="card-number" id="selectedNum">#--</div>
+                <div class="card-category" id="selectedCat">Select a station</div>
+                <div class="card-title" id="selectedTitle">Click a number on the map to inspect</div>
+            </div>
+
+            <h3>All Stations</h3>
+            <div class="list-container" id="stationsList">
+                <!-- Station list rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data mapping for all numbers based on resource fair sheet[cite: 1]
+        const stations = [
+            { id: 1, title: "Veterans", category: "Find Your Affinity Group", x: 12, y: 23.5 },
+            { id: 2, title: "Latinx / Latine", category: "Find Your Affinity Group", x: 26, y: 25.5 },
+            { id: 3, title: "Asian / Pacific Islander", category: "Find Your Affinity Group", x: 40, y: 23.5 },
+            { id: 4, title: "LGBTQIA+", category: "Find Your Affinity Group", x: 26, y: 43.5 },
+            { id: 5, title: "Working while in school", category: "Find Your Affinity Group", x: 74, y: 46 },
+            { id: 6, title: "Black / African / African-American", category: "Find Your Affinity Group", x: 79, y: 60.5 },
+            { id: 7, title: "Indigenous / Native American / American Indian / Alaskan Native", category: "Find Your Affinity Group", x: 71, y: 70 },
+            { id: 8, title: "Students with Accommodations", category: "Find Your Affinity Group", x: 92, y: 70.5 },
+            { id: 9, title: "Parents", category: "Find Your Affinity Group", x: 72, y: 91 },
+            { id: 10, title: "First-gen students", category: "Find Your Affinity Group", x: 92, y: 91 },
+            { id: 11, title: "Commuters", category: "Find Your Affinity Group", x: 23, y: 68 },
+            { id: 12, title: "InPlace Help Desk", category: "Get to Know Your Resources", x: 14, y: 81 },
+            { id: 13, title: "Discord Help Desk", category: "Get to Know Your Resources", x: 19, y: 81 },
+            { id: 14, title: "Online/Hybrid Q&A", category: "Get to Know Your Resources", x: 24, y: 81 },
+            { id: 15, title: "SJSU Resources", category: "Get to Know Your Resources", x: 29, y: 81 },
+            { id: 16, title: "SJSU MSW Alums", category: "Get to Know Your Resources", x: 34, y: 81 },
+            { id: 17, title: "SWGSA Merch + Q&A", category: "Get to Know Your Resources", x: 41, y: 81 },
+            { id: 18, title: "CAPS / Student Wellness Center", category: "Get to Know Your Resources", x: 46, y: 81 },
+            { id: 19, title: "NASW", category: "Get to Know Your Resources", x: 51, y: 86 },
+            { id: 20, title: "SJSU CARES", category: "Get to Know Your Resources", x: 51, y: 93 }
+        ];
+
+        let activeId = null;
+
+        const mapEl = document.getElementById('map');
+        const listEl = document.getElementById('stationsList');
+
+        function render() {
+            // Render Map Pins
+            stations.forEach(s => {
+                const pin = document.createElement('div');
+                pin.className = `pin ${s.id >= 12 ? 'resource' : ''}`;
+                pin.style.left = `${s.x}%`;
+                pin.style.top = `${s.y}%`;
+                pin.innerText = s.id;
+                pin.id = `pin-${s.id}`;
+                pin.addEventListener('click', () => selectStation(s.id));
+                mapEl.appendChild(pin);
+
+                // Render List item
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.id = `item-${s.id}`;
+                item.innerHTML = `
+                    <span class="badge">${s.id}</span>
+                    <span style="font-size: 0.9rem;">${s.title}</span>
+                `;
+                item.addEventListener('click', () => selectStation(s.id));
+                listEl.appendChild(item);
+            });
+        }
+
+        function selectStation(id) {
+            activeId = id;
+            const data = stations.find(s => s.id === id);
+
+            // Update details card
+            document.getElementById('selectedNum').innerText = `#${data.id}`;
+            document.getElementById('selectedCat').innerText = data.category;
+            document.getElementById('selectedTitle').innerText = data.title;
+
+            // Highlight Active Pin
+            document.querySelectorAll('.pin').forEach(p => p.classList.remove('active'));
+            const activePin = document.getElementById(`pin-${id}`);
+            if (activePin) activePin.classList.add('active');
+
+            // Highlight Active List Item
+            document.querySelectorAll('.list-item').forEach(i => i.classList.remove('active'));
+            const activeItem = document.getElementById(`item-${id}`);
+            if (activeItem) {
+                activeItem.classList.add('active');
+                activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        // Initialize application
+        render();
+    </script>
+</body>
+</html>
