@@ -48,6 +48,35 @@
             font-size: 0.85rem;
         }
 
+        /* Category Filter Bar */
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            width: 100%;
+            max-width: 800px;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            flex: 1;
+            padding: 10px 12px;
+            border: 2px solid var(--primary);
+            background-color: #ffffff;
+            color: var(--primary);
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .filter-btn.active {
+            background-color: var(--primary);
+            color: #ffffff;
+        }
+
         .container {
             display: grid;
             grid-template-columns: 1fr 320px;
@@ -56,7 +85,7 @@
             width: 100%;
         }
 
-        /* Mobile Layout Stack */
+        /* Mobile Responsive Layout */
         @media (max-width: 900px) {
             body {
                 padding: 8px;
@@ -67,11 +96,11 @@
                 gap: 12px;
             }
 
-            /* Make the active info card sticky under the map on mobile */
             .info-panel {
                 order: 2;
             }
 
+            /* Sticky selection card under map on mobile */
             .card {
                 position: sticky;
                 top: 8px;
@@ -153,7 +182,7 @@
             font-size: 0.7rem;
         }
 
-        /* Theater Seating Rows */
+        /* Theater Seating Rows - Side Blocks Tilted Inward at Top */
         .seating-row {
             position: absolute;
             background-color: #dbeafe;
@@ -274,11 +303,11 @@
             border-bottom: 2px dashed #1e293b;
         }
 
-        /* Mobile-Optimized Touch Pin Targets */
+        /* Marker Pins */
         .pin {
             position: absolute;
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             background-color: #ffffff;
             border: 2px solid #1e293b;
@@ -290,7 +319,7 @@
             justify-content: center;
             cursor: pointer;
             transform: translate(-50%, -50%);
-            transition: transform 0.15s ease, background-color 0.15s ease;
+            transition: transform 0.15s ease, opacity 0.2s ease, background-color 0.15s ease;
             box-shadow: 0 2px 6px rgba(0,0,0,0.25);
             z-index: 10;
         }
@@ -302,6 +331,10 @@
             transform: translate(-50%, -50%) scale(1.25);
             box-shadow: 0 0 0 3px var(--accent);
             z-index: 30;
+        }
+
+        .pin.dimmed {
+            opacity: 0.25;
         }
 
         .pin.resource {
@@ -369,7 +402,7 @@
             cursor: pointer;
             border-bottom: 1px solid #f1f5f9;
             transition: background 0.15s;
-            min-height: 44px; /* Accessible mobile touch target */
+            min-height: 44px;
         }
 
         .list-item:active {
@@ -379,6 +412,10 @@
         .list-item.active {
             background: #eff6ff;
             font-weight: 600;
+        }
+
+        .list-item.hidden {
+            display: none;
         }
 
         .badge {
@@ -405,11 +442,18 @@
 
     <header>
         <h1>Resource Fair Floor Map</h1>
-        <p class="subtitle">Tap any station number on the map or list below</p>
+        <p class="subtitle">Filter categories or tap any station number to reveal details</p>
     </header>
 
+    <!-- First step Filter Options -->
+    <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterCategory('all', this)">All Stations</button>
+        <button class="filter-btn" onclick="filterCategory('affinity', this)">Affinity Groups</button>
+        <button class="filter-btn" onclick="filterCategory('resource', this)">Resources</button>
+    </div>
+
     <div class="container">
-        <!-- Interactive Map area -->
+        <!-- Interactive Map Canvas -->
         <div class="map-wrapper">
             <div class="map-container" id="map">
                 <!-- Theater Area -->
@@ -440,10 +484,12 @@
                 </div>
 
                 <div class="zone courtyard">Courtyard</div>
+
+                <!-- Pins rendered dynamically -->
             </div>
         </div>
 
-        <!-- Info Panel Side area -->
+        <!-- Details & List Panel -->
         <div class="info-panel">
             <div class="card" id="detailsCard">
                 <div class="card-number" id="selectedNum">#--</div>
@@ -453,12 +499,13 @@
 
             <h3 style="font-size: 1rem; color: #334155;">All Stations</h3>
             <div class="list-container" id="stationsList">
-                <!-- Station list rendered here -->
+                <!-- List items rendered dynamically -->
             </div>
         </div>
     </div>
 
     <script>
+        // Exact station coordinates and descriptions from resource fair sheet[cite: 1]
         const stations = [
             { id: 1, title: "Veterans", category: "Find Your Affinity Group", x: 12, y: 23.5 },
             { id: 2, title: "Latinx / Latine", category: "Find Your Affinity Group", x: 26, y: 25.5 },
@@ -489,6 +536,7 @@
 
         function render() {
             stations.forEach(s => {
+                // Create pin element on map
                 const pin = document.createElement('div');
                 pin.className = `pin ${s.id >= 12 ? 'resource' : ''}`;
                 pin.style.left = `${s.x}%`;
@@ -498,6 +546,7 @@
                 pin.addEventListener('click', () => selectStation(s.id));
                 mapEl.appendChild(pin);
 
+                // Create item in scrollable list
                 const item = document.createElement('div');
                 item.className = 'list-item';
                 item.id = `item-${s.id}`;
@@ -514,14 +563,17 @@
             activeId = id;
             const data = stations.find(s => s.id === id);
 
+            // Update details card
             document.getElementById('selectedNum').innerText = `#${data.id}`;
             document.getElementById('selectedCat').innerText = data.category;
             document.getElementById('selectedTitle').innerText = data.title;
 
+            // Highlight Active Pin
             document.querySelectorAll('.pin').forEach(p => p.classList.remove('active'));
             const activePin = document.getElementById(`pin-${id}`);
             if (activePin) activePin.classList.add('active');
 
+            // Highlight Active List Item
             document.querySelectorAll('.list-item').forEach(i => i.classList.remove('active'));
             const activeItem = document.getElementById(`item-${id}`);
             if (activeItem) {
@@ -530,6 +582,31 @@
             }
         }
 
+        function filterCategory(category, btnElement) {
+            // Highlight active filter button
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            if (btnElement) btnElement.classList.add('active');
+
+            stations.forEach(s => {
+                const pin = document.getElementById(`pin-${s.id}`);
+                const listItem = document.getElementById(`item-${s.id}`);
+                const isResource = s.id >= 12;
+                const isAffinity = s.id < 12;
+
+                if (category === 'all') {
+                    pin.classList.remove('dimmed');
+                    listItem.classList.remove('hidden');
+                } else if (category === 'affinity') {
+                    pin.classList.toggle('dimmed', !isAffinity);
+                    listItem.classList.toggle('hidden', !isAffinity);
+                } else if (category === 'resource') {
+                    pin.classList.toggle('dimmed', !isResource);
+                    listItem.classList.toggle('hidden', !isResource);
+                }
+            });
+        }
+
+        // Initialize application
         render();
     </script>
 </body>
