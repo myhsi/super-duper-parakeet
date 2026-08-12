@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Course Schedule & Section Directory</title>
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #cbd5e1;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --regular-badge: #dbeafe;
+      --regular-text: #1e40af;
+      --spec-badge: #fef3c7;
+      --spec-text: #92400e;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-dark);
+      padding: 16px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+      align-items: center;
+      justify-content: space-between;
+      background: #f1f5f9;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .filters-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-right: 4px;
+    }
+
+    button {
+      padding: 6px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--text-dark);
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #e2e8f0;
+    }
+
+    button.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    input[type="text"] {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      min-width: 250px;
+    }
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .schedule-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .day-column {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: #f8fafc;
+      overflow: hidden;
+    }
+
+    .day-header {
+      background: #e2e8f0;
+      padding: 10px;
+      font-weight: 700;
+      text-align: center;
+      font-size: 0.95rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .time-slot {
+      border-top: 1px solid var(--border-color);
+      padding: 8px;
+      background: var(--card-bg);
+      margin-top: 4px;
+    }
+
+    .time-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .course-card {
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      border-left: 4px solid var(--primary);
+      background: #f1f5f9;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    .course-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background: #e2e8f0;
+    }
+
+    .course-code {
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .course-title {
+      font-size: 0.75rem;
+      color: var(--text-dark);
+      margin-top: 2px;
+    }
+
+    .section-count {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+      margin-top: 4px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-top: 4px;
+      margin-right: 4px;
+    }
+
+    .badge-regular {
+      background: var(--regular-badge);
+      color: var(--regular-text);
+    }
+
+    .badge-spec {
+      background: var(--spec-badge);
+      color: var(--spec-text);
+    }
+
+    /* Modal Styling */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 10px;
+      max-width: 750px;
+      width: 92%;
+      max-height: 85vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 14px; right: 14px;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .section-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.85rem;
+    }
+
+    .section-table th, .section-table td {
+      border: 1px solid var(--border-color);
+      padding: 8px 10px;
+      text-align: left;
+    }
+
+    .section-table th {
+      background: #f1f5f9;
+      font-weight: 700;
+    }
+
+    .section-table tr:nth-child(even) {
+      background: #f8fafc;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Weekly Course Schedule & Section Directory</h1>
+
+  <div class="controls">
+    <div class="filters-group">
+      <span class="filter-label">Session:</span>
+      <button class="filter-btn session-btn active" onclick="filterSession('All', this)">All</button>
+      <button class="filter-btn session-btn" onclick="filterSession('Regular', this)">Regular</button>
+      <button class="filter-btn session-btn" onclick="filterSession('Spec Sess', this)">Spec Sess</button>
+    </div>
+
+    <div class="filters-group">
+      <span class="filter-label">Year:</span>
+      <button class="filter-btn year-btn active" onclick="filterYear('All', this)">All Years</button>
+      <button class="filter-btn year-btn" onclick="filterYear('1st yr', this)">1st Yr</button>
+      <button class="filter-btn year-btn" onclick="filterYear('2nd yr', this)">2nd Yr</button>
+      <button class="filter-btn year-btn" onclick="filterYear('Final yr', this)">Final Yr</button>
+    </div>
+
+    <input type="text" id="searchInput" placeholder="Search code, professor, or room..." onkeyup="renderSchedule()">
+  </div>
+
+  <div class="schedule-grid" id="scheduleGrid"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="sectionModal">
+  <div class="modal-content">
+    <button class="close-btn" onclick="closeModal()">&times;</button>
+    <h2 id="modalCode"></h2>
+    <p id="modalMeta" style="color: var(--text-muted); margin-bottom: 12px; font-size: 0.9rem;"></p>
+    
+    <table class="section-table">
+      <thead>
+        <tr>
+          <th>Sec</th>
+          <th>Class Nbr</th>
+          <th>Instructor</th>
+          <th>Room</th>
+          <th>Year</th>
+          <th>Dates</th>
+        </tr>
+      </thead>
+      <tbody id="modalTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const rawSections = [
+  { course: "SCWK 200W - Social Work Graduate Writing Course", classNbr: "4452", section: "431-SEM", session: "Regular", year: "1st yr", dayNum: 1, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "Industrial Studies 230", instructor: "Patti Park", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 200W - Social Work Graduate Writing Course", classNbr: "47557", section: "80-SEM", session: "Spec Sess", year: "1st yr", dayNum: 4, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Kathy Lemon", dates: "09/03/2026 - 11/05/2026" },
+  { course: "SCWK 200W - Social Work Graduate Writing Course", classNbr: "47558", section: "81-SEM", session: "Spec Sess", year: "1st yr", dayNum: 4, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Edward Cohen", dates: "09/03/2026 - 11/05/2026" },
+  { course: "SCWK 200W - Social Work Graduate Writing Course", classNbr: "47559", section: "82-SEM", session: "Spec Sess", year: "1st yr", dayNum: 4, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Ann Wrixon", dates: "09/03/2026 - 11/05/2026" },
+  { course: "SCWK 200W - Social Work Graduate Writing Course", classNbr: "47560", section: "83-SEM", session: "Spec Sess", year: "1st yr", dayNum: 4, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Derek Wang", dates: "09/03/2026 - 11/05/2026" },
+  { course: "SCWK 200W - Social Work Graduate Writing Course", classNbr: "42115", section: "01-SEM", session: "Regular", year: "1st yr", dayNum: 5, startTime: "9:30:00 AM", endTime: "12:15:00 PM", room: "MacQuarrie Hall 332", instructor: "Edward Cohen", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 200W - Social Work Graduate Writing Course", classNbr: "42116", section: "02-SEM", session: "Regular", year: "1st yr", dayNum: 5, startTime: "9:30:00 AM", endTime: "12:15:00 PM", room: "Spartan Complex East 163", instructor: "Jennifer Hubbs", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 200W - Social Work Graduate Writing Course", classNbr: "42117", section: "03-SEM", session: "Regular", year: "1st yr", dayNum: 5, startTime: "12:30:00 PM", endTime: "3:15:00 PM", room: "Industrial Studies 230", instructor: "Brizette Garcia", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 202 - Social Welfare Policy Analysis for Social Work Practice", classNbr: "42429", section: "31-SEM", session: "Regular", year: "1st yr", dayNum: 1, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "Health Building 106", instructor: "Marina Vaserman", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 202 - Social Welfare Policy Analysis for Social Work Practice", classNbr: "40104", section: "01-SEM", session: "Regular", year: "1st yr", dayNum: 5, startTime: "12:30:00 PM", endTime: "3:15:00 PM", room: "Health Building 408", instructor: "Lisa Stead", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 202 - Social Welfare Policy Analysis for Social Work Practice", classNbr: "41287", section: "02-SEM", session: "Regular", year: "1st yr", dayNum: 5, startTime: "12:30:00 PM", endTime: "3:15:00 PM", room: "Health Building 106", instructor: "Earl Johnson", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 202 - Social Welfare Policy Analysis for Social Work Practice", classNbr: "41288", section: "03-SEM", session: "Regular", year: "1st yr", dayNum: 5, startTime: "9:30:00 AM", endTime: "12:15:00 PM", room: "Health Building 408", instructor: "Nayoun Lee", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 212 - Human Behavior in Social Environment I", classNbr: "42408", section: "01-SEM", session: "Regular", year: "1st yr", dayNum: 1, startTime: "9:00:00 AM", endTime: "11:45:00 AM", room: "Sweeney Hall 211", instructor: "Brizette Garcia", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 212 - Human Behavior in Social Environment I", classNbr: "47561", section: "80-SEM", session: "Spec Sess", year: "1st yr", dayNum: 2, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Nicole Dubus", dates: "09/01/2026 - 11/03/2026" },
+  { course: "SCWK 212 - Human Behavior in Social Environment I", classNbr: "47562", section: "81-SEM", session: "Spec Sess", year: "1st yr", dayNum: 2, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Ann Wrixon", dates: "09/01/2026 - 11/03/2026" },
+  { course: "SCWK 212 - Human Behavior in Social Environment I", classNbr: "47563", section: "82-SEM", session: "Spec Sess", year: "1st yr", dayNum: 2, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Gabriel Negrete", dates: "09/01/2026 - 11/03/2026" },
+  { course: "SCWK 212 - Human Behavior in Social Environment I", classNbr: "47564", section: "83-SEM", session: "Spec Sess", year: "1st yr", dayNum: 2, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Misty Mcnay", dates: "09/01/2026 - 11/03/2026" },
+  { course: "SCWK 212 - Human Behavior in Social Environment I", classNbr: "42409", section: "02-SEM", session: "Regular", year: "1st yr", dayNum: 3, startTime: "9:00:00 AM", endTime: "11:45:00 AM", room: "MacQuarrie Hall 332", instructor: "Soma Sen", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 212 - Human Behavior in Social Environment I", classNbr: "42410", section: "03-SEM", session: "Regular", year: "1st yr", dayNum: 3, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Sweeney Hall 346", instructor: "Jon Vales", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 212 - Human Behavior in Social Environment I", classNbr: "44541", section: "31-SEM", session: "Regular", year: "1st yr", dayNum: 3, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "Health Building 106", instructor: "Derek Wang", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 220 - Transcultural Generalist Practice I", classNbr: "41298", section: "01-SEM", session: "Regular", year: "1st yr", dayNum: 1, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Sweeney Hall 346", instructor: "Derek Wang", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 220 - Transcultural Generalist Practice I", classNbr: "41189", section: "32-SEM", session: "Regular", year: "2nd yr (3yr)", dayNum: 1, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "MacQuarrie Hall 332", instructor: "Derek Wang", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 220 - Transcultural Generalist Practice I", classNbr: "47565", section: "80-SEM", session: "Spec Sess", year: "1st yr", dayNum: 2, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Nicole Dubus", dates: "09/01/2026 - 11/03/2026" },
+  { course: "SCWK 220 - Transcultural Generalist Practice I", classNbr: "47636", section: "81-SEM", session: "Spec Sess", year: "1st yr", dayNum: 2, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Ann Wrixon", dates: "09/01/2026 - 11/03/2026" },
+  { course: "SCWK 220 - Transcultural Generalist Practice I", classNbr: "47637", section: "82-SEM", session: "Spec Sess", year: "1st yr", dayNum: 2, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Gabriel Negrete", dates: "09/01/2026 - 11/03/2026" },
+  { course: "SCWK 220 - Transcultural Generalist Practice I", classNbr: "47638", section: "83-SEM", session: "Spec Sess", year: "1st yr", dayNum: 2, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Diana Traub", dates: "09/01/2026 - 11/03/2026" },
+  { course: "SCWK 220 - Transcultural Generalist Practice I", classNbr: "40831", section: "02-SEM", session: "Regular", year: "1st yr", dayNum: 3, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Sweeney Hall 240", instructor: "Alexandra Krass", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 220 - Transcultural Generalist Practice I", classNbr: "41976", section: "03-SEM", session: "Regular", year: "1st yr", dayNum: 3, startTime: "9:00:00 AM", endTime: "11:45:00 AM", room: "Health Building 408", instructor: "Alexandra Krass", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 222 - Transcultural Advanced Generalist Practice I: Family Systems Focus", classNbr: "42538", section: "01-SEM", session: "Regular", year: "1st yr", dayNum: 2, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Sweeney Hall 212", instructor: "Carey Gil", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 222 - Transcultural Advanced Generalist Practice I: Family Systems Focus", classNbr: "50149", section: "04-SEM", session: "Regular", year: "Final yr", dayNum: 2, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Interdisciplinary Science 782", instructor: "Patti Park", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 222 - Transcultural Advanced Generalist Practice I: Family Systems Focus", classNbr: "47639", section: "80-SEM", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Patti Park", dates: "09/03/2026 - 11/05/2026" },
+  { course: "SCWK 224 - Advanced Generalist Practice With Spanish Speaking Populations", classNbr: "41847", section: "01-SEM", session: "Regular", year: "Final yr", dayNum: 2, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "On Line", instructor: "Carol Perez", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "47085", section: "07-SUP", session: "Regular", year: "2nd yr (3yr)", dayNum: 2, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "Boccardo Business Center 128", instructor: "Johanna Blandino", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "47086", section: "08-SUP", session: "Regular", year: "2nd yr (3yr)", dayNum: 2, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "Boccardo Business Center 128", instructor: "Vanessa Gregory", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "42420", section: "01-SUP", session: "Regular", year: "First yr", dayNum: 3, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Boccardo Business Center 120", instructor: "Johanna Blandino", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "42443", section: "02-SUP", session: "Regular", year: "First yr", dayNum: 3, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Health Building 405", instructor: "Jenny Hundemer", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "42444", section: "03-SUP", session: "Regular", year: "First yr", dayNum: 3, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Boccardo Business Center 120", instructor: "Jessica Rose", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "42445", section: "04-SUP", session: "Regular", year: "First yr", dayNum: 3, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Health Building 405", instructor: "Jennifer Jackson", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "42446", section: "05-SUP", session: "Regular", year: "First yr", dayNum: 3, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Boccardo Business Center 120", instructor: "Andy Sweet", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "42447", section: "06-SUP", session: "Regular", year: "First yr", dayNum: 3, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Health Building 405", instructor: "Jenny Hundemer", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "47660", section: "20-SUP", session: "Spec Sess", year: "First yr", dayNum: 3, startTime: "5:00:00 PM", endTime: "6:30:00 PM", room: "On Line", instructor: "Cynthia Figueroa", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "47650", section: "85-SUP", session: "Spec Sess", year: "First yr", dayNum: 4, startTime: "8:15:00 PM", endTime: "9:15:00 PM", room: "On Line", instructor: "Jodi Barnum", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "47651", section: "86-SUP", session: "Spec Sess", year: "First yr", dayNum: 4, startTime: "8:15:00 PM", endTime: "9:15:00 PM", room: "On Line", instructor: "Jacob Lampe", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "47652", section: "87-SUP", session: "Spec Sess", year: "First yr", dayNum: 4, startTime: "8:15:00 PM", endTime: "9:15:00 PM", room: "On Line", instructor: "Courtney Nelson", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "47653", section: "88-SUP", session: "Spec Sess", year: "First yr", dayNum: 4, startTime: "8:15:00 PM", endTime: "9:15:00 PM", room: "On Line", instructor: "Tam Nguyen", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 230 - Social Work Practicum I", classNbr: "47654", section: "89-SUP", session: "Spec Sess", year: "First yr", dayNum: 4, startTime: "8:15:00 PM", endTime: "9:15:00 PM", room: "On Line", instructor: "Michelle Findley", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "42421", section: "01-SUP", session: "Regular", year: "Final yr", dayNum: 1, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Spartan Complex Central 152", instructor: "Jenny Hundemer", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "42448", section: "02-SUP", session: "Regular", year: "Final yr", dayNum: 1, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Boccardo Business Center 128", instructor: "Jessica Rose", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "42449", section: "03-SUP", session: "Regular", year: "Final yr", dayNum: 1, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Boccardo Business Center 128", instructor: "Jennifer Jackson", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "42450", section: "04-SUP", session: "Regular", year: "Final yr", dayNum: 1, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Do Not Optimizer", instructor: "To be Announced", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "44084", section: "05-SUP", session: "Regular", year: "Final yr", dayNum: 1, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Spartan Complex Central 152", instructor: "Jenny Hundemer", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "44085", section: "06-SUP", session: "Regular", year: "Final yr", dayNum: 1, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Spartan Complex Central 152", instructor: "Andy Sweet", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "44086", section: "07-SUP", session: "Regular", year: "Final yr", dayNum: 3, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "Spartan Complex Central 152", instructor: "Vanessa Gregory", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "44087", section: "08-SUP", session: "Regular", year: "Final yr", dayNum: 3, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "Spartan Complex Central 152", instructor: "Erin Osanna-Barba", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "47655", section: "85-SUP", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "6:30:00 PM", endTime: "7:30:00 PM", room: "On Line", instructor: "Jacob Lampe", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "47656", section: "86-SUP", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "6:30:00 PM", endTime: "7:30:00 PM", room: "On Line", instructor: "Denise Martell", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "47657", section: "87-SUP", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "6:30:00 PM", endTime: "7:30:00 PM", room: "On Line", instructor: "Courtney Nelson", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "47658", section: "88-SUP", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "6:30:00 PM", endTime: "7:30:00 PM", room: "On Line", instructor: "Carey Gil", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 232 - Social Work Practicum III", classNbr: "47659", section: "89-SUP", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "6:30:00 PM", endTime: "7:30:00 PM", room: "On Line", instructor: "Michelle Findley", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 231 - Social Work Practicum II", classNbr: "47661", section: "20-SUP", session: "Spec Sess", year: "1st yr", dayNum: 5, startTime: "6:00:00 PM", endTime: "7:30:00 PM", room: "On Line", instructor: "Cynthia Figueroa", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 251 - Social Work in Health and Aging", classNbr: "48382", section: "01-SEM", session: "Regular", year: "Final yr", dayNum: 1, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Spartan Complex Central 152", instructor: "Sadhna Diwan", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 251 - Social Work in Health and Aging", classNbr: "49122", section: "80-SEM", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Sadhna Diwan", dates: "09/03/2026 - 11/05/2026" },
+  { course: "SCWK 260 - Policy Practice in Child and Family Welfare", classNbr: "45441", section: "32-SEM", session: "Regular", year: "2nd yr (3yr)/Final yr", dayNum: 3, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "Spartan Complex East 163", instructor: "Darcy Cabral", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 263 - Social Work and the Law", classNbr: "47662", section: "20-SEM", session: "Spec Sess", year: "Final yr", dayNum: 2, startTime: "6:00:00 PM", endTime: "7:30:00 PM", room: "On Line", instructor: "Lisa Hayes", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 265 - Child Welfare Practice in Public and Government Systems", classNbr: "41466", section: "01-SEM", session: "Regular", year: "Final yr", dayNum: 2, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "Sweeney Hall 242", instructor: "Jennifer Hubbs", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 265 - Child Welfare Practice in Public and Government Systems", classNbr: "47640", section: "80-SEM", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Sandra Gregory", dates: "09/03/2026 - 11/05/2026" },
+  { course: "SCWK 272 - Social Work in Educational Settings", classNbr: "42592", section: "01-LEC", session: "Regular", year: "Final yr", dayNum: 2, startTime: "9:00:00 AM", endTime: "11:45:00 AM", room: "Interdisciplinary Science 878", instructor: "Jennifer Buey", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 272 - Social Work in Educational Settings", classNbr: "50520", section: "20-LEC", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Marian Meadows", dates: "09/03/2026 - 11/05/2026" },
+  { course: "SCWK 272 - Social Work in Educational Settings", classNbr: "47641", section: "80-LEC", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Marian Meadows", dates: "09/03/2026 - 11/05/2026" },
+  { course: "SCWK 281 - Social Work in Mental Health", classNbr: "40375", section: "01-SEM", session: "Regular", year: "Final yr", dayNum: 1, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Sweeney Hall 240", instructor: "Babe Kawaii-Bogue", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 281 - Social Work in Mental Health", classNbr: "40811", section: "02-SEM", session: "Regular", year: "Final yr", dayNum: 2, startTime: "9:00:00 AM", endTime: "11:45:00 AM", room: "Sweeney Hall 431", instructor: "Sarah Accomazzo", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 281 - Social Work in Mental Health", classNbr: "47642", section: "80-SEM", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Nicole Dubus", dates: "09/03/2026 - 11/05/2026" },
+  { course: "SCWK 281 - Social Work in Mental Health", classNbr: "47643", section: "81-SEM", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Sarah Accomazzo", dates: "09/03/2026 - 11/05/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "44132", section: "33-SUP", session: "Regular", year: "Final yr", dayNum: 1, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "Spartan Complex Central 152", instructor: "William Frey", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "48384", section: "36-SUP", session: "Regular", year: "Final yr", dayNum: 1, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "Industrial Studies 230", instructor: "Babe Kawaii-Bogue", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "44577", section: "01-SUP", session: "Regular", year: "Final yr", dayNum: 2, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Spartan Complex Central 152", instructor: "Sang E Lee", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "44576", section: "02-SUP", session: "Regular", year: "Final yr", dayNum: 2, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Duncan Hall 505", instructor: "Sarah Accomazzo", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "41608", section: "03-SUP", session: "Regular", year: "Final yr", dayNum: 2, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Industrial Studies 230", instructor: "Soma Sen", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "44133", section: "04-SUP", session: "Regular", year: "Final yr", dayNum: 2, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Spartan Complex Central 152", instructor: "Sang E Lee", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "41609", section: "05-SUP", session: "Regular", year: "Final yr", dayNum: 2, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Boccardo Business Center 128", instructor: "Meekyung Han", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "41610", section: "06-SUP", session: "Regular", year: "Final yr", dayNum: 2, startTime: "3:00:00 PM", endTime: "5:45:00 PM", room: "Hugh Gillis Hall 227", instructor: "Edward Cohen", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "47644", section: "80-SUP", session: "Spec Sess", year: "Final yr", dayNum: 2, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Nayoun Lee", dates: "09/01/2026 - 11/03/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "47645", section: "81-SUP", session: "Spec Sess", year: "Final yr", dayNum: 2, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Kathy Lemon", dates: "09/01/2026 - 11/03/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "47646", section: "82-SUP", session: "Spec Sess", year: "Final yr", dayNum: 2, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Yoli Anyon", dates: "09/01/2026 - 11/03/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "47647", section: "83-SUP", session: "Spec Sess", year: "Final yr", dayNum: 3, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Kathy Lemon", dates: "09/02/2026 - 11/04/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "47648", section: "84-SUP", session: "Spec Sess", year: "Final yr", dayNum: 3, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Babe Kawaii-Bogue", dates: "09/02/2026 - 11/04/2026" },
+  { course: "SCWK 298A - Special Study A", classNbr: "47649", section: "85-SUP", session: "Spec Sess", year: "Final yr", dayNum: 3, startTime: "6:30:00 PM", endTime: "8:00:00 PM", room: "On Line", instructor: "Jennifer Wolf", dates: "09/02/2026 - 11/04/2026" }
+];
+
+const dayMap = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday' };
+
+let activeSession = 'All';
+let activeYear = 'All';
+
+function filterSession(session, btn) {
+  activeSession = session;
+  document.querySelectorAll('.session-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSchedule();
+}
+
+function filterYear(year, btn) {
+  activeYear = year;
+  document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSchedule();
+}
+
+function renderSchedule() {
+  const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+  const grid = document.getElementById('scheduleGrid');
+  grid.innerHTML = '';
+
+  for (let dayNum = 1; dayNum <= 5; dayNum++) {
+    const dayName = dayMap[dayNum];
+    const dayCol = document.createElement('div');
+    dayCol.className = 'day-column';
+
+    const header = document.createElement('div');
+    header.className = 'day-header';
+    header.innerText = dayName;
+    dayCol.appendChild(header);
+
+    // Filter matching section rows
+    const matchingSections = rawSections.filter(item => {
+      const isDay = item.dayNum === dayNum;
+      const isSession = activeSession === 'All' || item.session === activeSession;
+      
+      let isYear = activeYear === 'All';
+      if (!isYear) {
+        if (activeYear === '1st yr') isYear = item.year.includes('1st') || item.year.includes('First');
+        else if (activeYear === '2nd yr') isYear = item.year.includes('2nd');
+        else if (activeYear === 'Final yr') isYear = item.year.includes('Final');
+      }
+
+      const isSearch = item.course.toLowerCase().includes(searchQuery) ||
+                       item.instructor.toLowerCase().includes(searchQuery) ||
+                       item.room.toLowerCase().includes(searchQuery) ||
+                       item.classNbr.toLowerCase().includes(searchQuery);
+
+      return isDay && isSession && isYear && isSearch;
+    });
+
+    // Group sections by TimeSlot + Course Name + Session
+    const groups = {};
+    matchingSections.forEach(sec => {
+      const timeSlot = `${sec.startTime} - ${sec.endTime}`;
+      const groupKey = `${timeSlot}||${sec.course}||${sec.session}`;
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          timeSlot: timeSlot,
+          course: sec.course,
+          session: sec.session,
+          sections: []
+        };
+      }
+      groups[groupKey].sections.push(sec);
+    });
+
+    // Group by time slots for rendering UI
+    const timeSlotsMap = {};
+    Object.values(groups).forEach(g => {
+      if (!timeSlotsMap[g.timeSlot]) timeSlotsMap[g.timeSlot] = [];
+      timeSlotsMap[g.timeSlot].push(g);
+    });
+
+    Object.keys(timeSlotsMap).forEach(timeSlot => {
+      const slotDiv = document.createElement('div');
+      slotDiv.className = 'time-slot';
+
+      const timeTitle = document.createElement('div');
+      timeTitle.className = 'time-title';
+      timeTitle.innerText = timeSlot;
+      slotDiv.appendChild(timeTitle);
+
+      timeSlotsMap[timeSlot].forEach(group => {
+        const card = document.createElement('div');
+        card.className = 'course-card';
+        card.onclick = () => openModal(group, dayName);
+
+        const codeParts = group.course.split(' - ');
+        const code = codeParts[0];
+        const title = codeParts.slice(1).join(' - ');
+
+        const codeEl = document.createElement('div');
+        codeEl.className = 'course-code';
+        codeEl.innerText = code;
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'course-title';
+        titleEl.innerText = title;
+
+        const countEl = document.createElement('div');
+        countEl.className = 'section-count';
+        countEl.innerText = `${group.sections.length} Section${group.sections.length > 1 ? 's' : ''} Offered`;
+
+        const badge = document.createElement('span');
+        badge.className = `badge ${group.session === 'Regular' ? 'badge-regular' : 'badge-spec'}`;
+        badge.innerText = group.session;
+
+        card.appendChild(codeEl);
+        card.appendChild(titleEl);
+        card.appendChild(countEl);
+        card.appendChild(badge);
+        slotDiv.appendChild(card);
+      });
+
+      dayCol.appendChild(slotDiv);
+    });
+
+    grid.appendChild(dayCol);
+  }
+}
+
+function openModal(group, dayName) {
+  document.getElementById('modalCode').innerText = group.course;
+  document.getElementById('modalMeta').innerText = `${dayName} | ${group.timeSlot} | ${group.session} Session`;
+
+  const tbody = document.getElementById('modalTableBody');
+  tbody.innerHTML = '';
+
+  group.sections.forEach(sec => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${sec.section}</strong></td>
+      <td>${sec.classNbr}</td>
+      <td>${sec.instructor}</td>
+      <td>${sec.room}</td>
+      <td>${sec.year}</td>
+      <td>${sec.dates}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('sectionModal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('sectionModal').style.display = 'none';
+}
+
+// Close modal on click outside content
+window.onclick = function(event) {
+  const modal = document.getElementById('sectionModal');
+  if (event.target === modal) {
+    closeModal();
+  }
+};
+
+// Initial Render
+renderSchedule();
+</script>
+
+</body>
+</html>
