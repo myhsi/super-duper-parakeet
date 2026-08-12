@@ -336,7 +336,7 @@ const rawSections = [
   { course: "SCWK 220 - Transcultural Generalist Practice I", classNbr: "47638", section: "83-SEM", session: "Spec Sess", year: "1st yr", dayNum: 2, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Diana Traub", dates: "09/01/2026 - 11/03/2026" },
   { course: "SCWK 220 - Transcultural Generalist Practice I", classNbr: "40831", section: "02-SEM", session: "Regular", year: "1st yr", dayNum: 3, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Sweeney Hall 240", instructor: "Alexandra Krass", dates: "08/19/2026 - 12/07/2026" },
   { course: "SCWK 220 - Transcultural Generalist Practice I", classNbr: "41976", section: "03-SEM", session: "Regular", year: "1st yr", dayNum: 3, startTime: "9:00:00 AM", endTime: "11:45:00 AM", room: "Health Building 408", instructor: "Alexandra Krass", dates: "08/19/2026 - 12/07/2026" },
-  { course: "SCWK 222 - Transcultural Advanced Generalist Practice I: Family Systems Focus", classNbr: "42538", section: "01-SEM", session: "Regular", year: "Final yr", dayNum: 2, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Sweeney Hall 212", instructor: "Carey Gil", dates: "08/19/2026 - 12/07/2026" },
+  { course: "SCWK 222 - Transcultural Advanced Generalist Practice I: Family Systems Focus", classNbr: "42538", section: "01-SEM", session: "Regular", year: "1st yr", dayNum: 2, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Sweeney Hall 212", instructor: "Carey Gil", dates: "08/19/2026 - 12/07/2026" },
   { course: "SCWK 222 - Transcultural Advanced Generalist Practice I: Family Systems Focus", classNbr: "50149", section: "04-SEM", session: "Regular", year: "Final yr", dayNum: 2, startTime: "12:00:00 PM", endTime: "2:45:00 PM", room: "Interdisciplinary Science 782", instructor: "Patti Park", dates: "08/19/2026 - 12/07/2026" },
   { course: "SCWK 222 - Transcultural Advanced Generalist Practice I: Family Systems Focus", classNbr: "47639", section: "80-SEM", session: "Spec Sess", year: "Final yr", dayNum: 4, startTime: "8:00:00 PM", endTime: "9:30:00 PM", room: "On Line", instructor: "Patti Park", dates: "09/03/2026 - 11/05/2026" },
   { course: "SCWK 224 - Advanced Generalist Practice With Spanish Speaking Populations", classNbr: "41847", section: "01-SEM", session: "Regular", year: "Final yr", dayNum: 2, startTime: "6:00:00 PM", endTime: "8:45:00 PM", room: "On Line", instructor: "Carol Perez", dates: "08/19/2026 - 12/07/2026" },
@@ -402,6 +402,21 @@ const dayMap = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'F
 let activeSession = 'All';
 let activeYear = 'All';
 
+// Converts time string like "9:30:00 AM" or "6:00:00 PM" to minutes from midnight
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr) return 0;
+  const parts = timeStr.trim().split(' ');
+  const ampm = parts[1] ? parts[1].toUpperCase() : 'AM';
+  const timeParts = parts[0].split(':');
+  let hours = parseInt(timeParts[0], 10);
+  const minutes = parseInt(timeParts[1], 10);
+
+  if (ampm === 'PM' && hours < 12) hours += 12;
+  if (ampm === 'AM' && hours === 12) hours = 0;
+
+  return hours * 60 + minutes;
+}
+
 function filterSession(session, btn) {
   activeSession = session;
   document.querySelectorAll('.session-btn').forEach(b => b.classList.remove('active'));
@@ -459,6 +474,7 @@ function renderSchedule() {
       if (!groups[groupKey]) {
         groups[groupKey] = {
           timeSlot: timeSlot,
+          startTimeStr: sec.startTime,
           course: sec.course,
           session: sec.session,
           sections: []
@@ -467,23 +483,32 @@ function renderSchedule() {
       groups[groupKey].sections.push(sec);
     });
 
-    // Group by time slots for rendering UI
+    // Group by time slots
     const timeSlotsMap = {};
     Object.values(groups).forEach(g => {
-      if (!timeSlotsMap[g.timeSlot]) timeSlotsMap[g.timeSlot] = [];
-      timeSlotsMap[g.timeSlot].push(g);
+      if (!timeSlotsMap[g.timeSlot]) {
+        timeSlotsMap[g.timeSlot] = {
+          slotLabel: g.timeSlot,
+          startMinutes: parseTimeToMinutes(g.startTimeStr),
+          courses: []
+        };
+      }
+      timeSlotsMap[g.timeSlot].courses.push(g);
     });
 
-    Object.keys(timeSlotsMap).forEach(timeSlot => {
+    // Sort time slots chronologically by start time
+    const sortedTimeSlots = Object.values(timeSlotsMap).sort((a, b) => a.startMinutes - b.startMinutes);
+
+    sortedTimeSlots.forEach(slotObj => {
       const slotDiv = document.createElement('div');
       slotDiv.className = 'time-slot';
 
       const timeTitle = document.createElement('div');
       timeTitle.className = 'time-title';
-      timeTitle.innerText = timeSlot;
+      timeTitle.innerText = slotObj.slotLabel;
       slotDiv.appendChild(timeTitle);
 
-      timeSlotsMap[timeSlot].forEach(group => {
+      slotObj.courses.forEach(group => {
         const card = document.createElement('div');
         card.className = 'course-card';
         card.onclick = () => openModal(group, dayName);
@@ -502,7 +527,7 @@ function renderSchedule() {
 
         const countEl = document.createElement('div');
         countEl.className = 'section-count';
-        countEl.innerText = `${group.sections.length} Section${group.sections.length > 1 ? 's' : ''}`;
+        countEl.innerText = `${group.sections.length} Section${group.sections.length > 1 ? 's' : ''} Offered`;
 
         const badge = document.createElement('span');
         badge.className = `badge ${group.session === 'Regular' ? 'badge-regular' : 'badge-spec'}`;
