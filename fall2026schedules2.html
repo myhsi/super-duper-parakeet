@@ -527,7 +527,7 @@ function renderSchedule() {
 
         const countEl = document.createElement('div');
         countEl.className = 'section-count';
-        countEl.innerText = `${group.sections.length} Section${group.sections.length > 1 ? 's' : ''} Offered`;
+        countEl.innerText = `${group.sections.length} Section${group.sections.length > 1 ? 's' : ''}`;
 
         const badge = document.createElement('span');
         badge.className = `badge ${group.session === 'Regular' ? 'badge-regular' : 'badge-spec'}`;
