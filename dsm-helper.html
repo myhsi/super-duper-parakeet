@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSM-5 Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-slate-100 h-screen flex flex-col items-center p-4 md:p-8">
+
+    <div id="root" class="w-full h-full max-w-3xl"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // --- ICONS ---
+        const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
+        const IconBook = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>;
+        const IconReset = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>;
+        const IconDown = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>;
+        const IconRight = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
+
+        // --- DATA ---
+        const DIAGNOSES = [
+            {
+                id: "depressive-combined",
+                type: "complex_mood", 
+                name: "Depressive Disorders (MDD & PDD)",
+                sections: [
+                    {
+                        id: "A",
+                        title: "Core Mood & Duration",
+                        instruction: "Select all that apply to establish timeline.",
+                        items: [
+                            { id: "mood_depressed", text: "Depressed mood most of the day, nearly every day." },
+                            { id: "mood_anhedonia", text: "Markedly diminished interest or pleasure in all, or almost all, activities." },
+                            { id: "dur_2weeks", text: "Symptoms present for at least 2 weeks." },
+                            { id: "dur_2years", text: "Depressed mood has lasted for at least 2 years." }
+                        ]
+                    },
+                    {
+                        id: "B",
+                        title: "Symptom Criteria",
+                        instruction: "Select all symptoms present.",
+                        items: [
+                            { id: "s_appetite", text: "Significant weight loss/gain or change in appetite." },
+                            { id: "s_sleep", text: "Insomnia or hypersomnia." },
+                            { id: "s_agitation", text: "Psychomotor agitation or retardation." },
+                            { id: "s_fatigue", text: "Fatigue or loss of energy." },
+                            { id: "s_guilt", text: "Feelings of worthlessness or excessive guilt." },
+                            { id: "s_concentrate", text: "Diminished ability to think or concentrate." },
+                            { id: "s_suicide", text: "Recurrent thoughts of death or suicidal ideation." },
+                            { id: "s_selfesteem", text: "Low self-esteem (Specific to PDD)." },
+                            { id: "s_hopeless", text: "Feelings of hopelessness (Specific to PDD)." }
+                        ]
+                    },
+                    {
+                        id: "C",
+                        title: "Exclusions / Impairment",
+                        type: "mandatory_multi",
+                        items: [
+                            { id: "impairment", text: "Symptoms cause clinically significant distress or impairment." },
+                            { id: "exclusion", text: "Not attributable to substance or medical condition." },
+                            { id: "no_mania", text: "There has never been a manic or hypomanic episode." }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "gad-dsm5",
+                type: "complex_standard",
+                name: "Generalized Anxiety Disorder",
+                sections: [
+                    { id: "A", title: "Criterion A: Excessive Anxiety", type: "mandatory_single", items: [{ id: "a1", text: "Excessive anxiety and worry (6+ months)." }] },
+                    { id: "B", title: "Criterion B: Uncontrollable", type: "mandatory_single", items: [{ id: "b1", text: "Difficult to control the worry." }] },
+                    { id: "C", title: "Criterion C: 3+ Symptoms", minRequired: 3, items: [
+                        { id: "c1", text: "Restlessness or on edge." }, { id: "c2", text: "Easily fatigued." }, { id: "c3", text: "Difficulty concentrating." },
+                        { id: "c4", text: "Irritability." }, { id: "c5", text: "Muscle tension." }, { id: "c6", text: "Sleep disturbance." }
+                    ]},
+                    { id: "D", title: "Impairment & Rule Outs", type: "mandatory_multi", items: [{ id: "d1", text: "Clinically significant distress." }, { id: "d2", text: "Not attributable to substance/medical." }] }
+                ]
+            },
+            {
+                id: "aud-severe",
+                type: "sud",
+                name: "Alcohol Use Disorder",
+                sections: [
+                    { id: "A", title: "Criteria (12-month period)", instruction: "Check all that apply.", minRequired: 2, items: [
+                        { id: "1", text: "Larger amounts/longer period than intended." }, { id: "2", text: "Persistent desire/unsuccessful efforts to cut down." },
+                        { id: "3", text: "Time spent obtaining, using, or recovering." }, { id: "4", text: "Craving." },
+                        { id: "5", text: "Failure to fulfill major obligations." }, { id: "6", text: "Social/interpersonal problems." },
+                        { id: "7", text: "Activities given up." }, { id: "8", text: "Hazardous use." },
+                        { id: "9", text: "Physical/psychological problems known." }, { id: "10", text: "Tolerance." }, { id: "11", text: "Withdrawal." }
+                    ]}
+                ]
+            },
+            {
+                id: "cud-severe",
+                type: "sud",
+                name: "Cannabis Use Disorder",
+                sections: [
+                    { id: "A", title: "Criteria (12-month period)", instruction: "Check all that apply.", minRequired: 2, items: [
+                        { id: "1", text: "Taken in larger amounts/longer period than intended." }, { id: "2", text: "Persistent desire/unsuccessful efforts to cut down." },
+                        { id: "3", text: "Time spent obtaining, using, or recovering." }, { id: "4", text: "Craving, or a strong desire or urge to use cannabis." },
+                        { id: "5", text: "Failure to fulfill major obligations." }, { id: "6", text: "Social/interpersonal problems." },
+                        { id: "7", text: "Activities given up." }, { id: "8", text: "Hazardous use." },
+                        { id: "9", text: "Physical/psychological problems known." }, { id: "10", text: "Tolerance." }, { id: "11", text: "Withdrawal (irritability, anxiety, sleep difficulty)." }
+                    ]}
+                ]
+            }
+        ];
+
+        function App() {
+            const [selectedDx, setSelectedDx] = useState(DIAGNOSES[0]);
+            const [checkedState, setCheckedState] = useState({});
+            const [expandedSections, setExpandedSections] = useState({ A: true, B: true, C: true, D: true });
+
+            // --- EVALUATION ENGINE ---
+            const evaluateDiagnosis = () => {
+                const has = (id) => !!checkedState[id];
+
+                // 1. DEPRESSIVE DISORDERS (Differential)
+                if (selectedDx.type === 'complex_mood') {
+                    // MDD Logic
+                    const mddCore = has('mood_depressed') || has('mood_anhedonia');
+                    const mddList = ['mood_depressed', 'mood_anhedonia', 's_appetite', 's_sleep', 's_agitation', 's_fatigue', 's_guilt', 's_concentrate', 's_suicide'];
+                    const mddCount = mddList.filter(id => has(id)).length;
+                    const mddTime = has('dur_2weeks');
+                    const exclusions = has('impairment') && has('exclusion') && has('no_mania');
+                    const isMDD = mddTime && mddCore && (mddCount >= 5) && exclusions;
+
+                    // PDD Logic
+                    const pddMood = has('mood_depressed') && has('dur_2years');
+                    const pddList = ['s_appetite', 's_sleep', 's_fatigue', 's_selfesteem', 's_concentrate', 's_hopeless'];
+                    const pddCount = pddList.filter(id => has(id)).length;
+                    const isPDD = pddMood && (pddCount >= 2) && exclusions;
+
+                    if (isMDD && isPDD) return { status: "BOTH (Double Depression)", color: "bg-purple-600 text-white" };
+                    if (isMDD) return { status: "MDD CRITERIA MET", color: "bg-red-600 text-white" };
+                    if (isPDD) return { status: "PDD CRITERIA MET", color: "bg-orange-500 text-white" };
+                    return { status: "NO DIAGNOSIS", color: "bg-slate-200 text-slate-500" };
+                }
+
+                // 2. SUD Logic (Alcohol & Cannabis)
+                if (selectedDx.type === 'sud') {
+                    const count = selectedDx.sections[0].items.filter(i => checkedState[i.id]).length;
+                    if (count >= 6) return { status: "SEVERE", color: "bg-red-600 text-white" };
+                    if (count >= 4) return { status: "MODERATE", color: "bg-orange-500 text-white" };
+                    if (count >= 2) return { status: "MILD", color: "bg-yellow-500 text-white" };
+                    return { status: "NO DIAGNOSIS", color: "bg-slate-200 text-slate-500" };
+                }
+                
+                // 3. General Complex Logic (GAD)
+                const evaluateSection = (section) => {
+                    const count = section.items.filter(item => checkedState[item.id]).length;
+                    if (section.type === 'mandatory_single') return count >= 1;
+                    if (section.type === 'mandatory_multi') return count === section.items.length;
+                    if (section.minRequired) return count >= section.minRequired;
+                    return false;
+                };
+                return selectedDx.sections.every(evaluateSection) 
+                    ? { status: "CRITERIA MET", color: "bg-green-600 text-white" }
+                    : { status: "NOT MET", color: "bg-slate-200 text-slate-500" };
+            };
+
+            const result = evaluateDiagnosis();
+
+            return (
+                <div className="flex flex-col h-full bg-slate-100 font-sans text-slate-900 rounded-lg overflow-hidden border border-slate-300 shadow-xl">
+                    <div className="bg-slate-900 text-white p-4 flex justify-between items-center shadow-md z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-indigo-500 p-2 rounded-lg text-white"><IconBook /></div>
+                            <div><h1 className="font-bold text-lg leading-tight">DSM-5 Helper</h1>
+<h2>Disclaimer: This tool is a prototype for educational purposes. It is not a substitute for professional clinical judgment.</h2></div>
+                        </div>
+                        <select 
+                            className="bg-slate-800 border border-slate-700 text-sm rounded px-3 py-2 text-slate-200 outline-none focus:border-indigo-500 cursor-pointer"
+                            onChange={(e) => { setSelectedDx(DIAGNOSES.find(d => d.id === e.target.value)); setCheckedState({}); }}
+                            value={selectedDx.id}
+                        >
+                            {DIAGNOSES.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        </select>
+                    </div>
+
+                    <div className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-20 shadow-sm">
+                        <div className="flex items-center gap-4">
+                            <div className={`px-4 py-2 rounded-lg font-bold text-sm tracking-wide shadow-sm transition-all duration-300 ${result.color}`}>
+                                {result.status}
+                            </div>
+                            {selectedDx.type === 'sud' && (
+                                <span className="text-slate-500 text-sm font-medium">
+                                    {selectedDx.sections[0].items.filter(i => checkedState[i.id]).length} Met
+                                </span>
+                            )}
+                        </div>
+                        <button onClick={() => setCheckedState({})} className="text-slate-400 hover:text-slate-700 transition-colors" title="Reset">
+                            <IconReset />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+                        {selectedDx.sections.map((section) => (
+                            <div key={section.id} className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                                <div 
+                                    onClick={() => setExpandedSections(p => ({...p, [section.id]: !p[section.id]}))}
+                                    className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors rounded-t-lg select-none"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                                            {section.id}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-sm text-slate-700">{section.title}</h3>
+                                            {section.instruction && <p className="text-xs text-slate-400">{section.instruction}</p>}
+                                        </div>
+                                    </div>
+                                    {expandedSections[section.id] ? <IconDown /> : <IconRight />}
+                                </div>
+                                {expandedSections[section.id] && (
+                                    <div className="px-4 pb-4 space-y-2 border-t border-slate-100 pt-3">
+                                        {section.items.map(item => (
+                                            <label key={item.id} className={`flex items-start gap-3 p-2.5 rounded cursor-pointer transition-colors text-sm ${checkedState[item.id] ? 'bg-indigo-50/50' : 'hover:bg-slate-50'}`}>
+                                                <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${checkedState[item.id] ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'}`}>
+                                                    {checkedState[item.id] && <span className="text-white"><IconCheck /></span>}
+                                                </div>
+                                                <input type="checkbox" className="hidden" checked={!!checkedState[item.id]} onChange={() => setCheckedState(p => ({ ...p, [item.id]: !p[item.id] }))} />
+                                                <span className={`leading-relaxed ${checkedState[item.id] ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>{item.text}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
