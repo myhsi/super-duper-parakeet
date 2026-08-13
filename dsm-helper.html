@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>DSM-5 Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="bg-slate-100 h-screen flex flex-col items-center p-4 md:p-8">
+<body class="bg-slate-100 min-h-[100dvh] flex flex-col items-center p-2 sm:p-4 md:p-8">
 
-    <div id="root" class="w-full h-full max-w-3xl"></div>
+    <div id="root" class="w-full max-w-3xl flex-1 flex flex-col"></div>
 
     <script type="text/babel">
         const { useState } = React;
@@ -122,9 +122,7 @@
             const evaluateDiagnosis = () => {
                 const has = (id) => !!checkedState[id];
 
-                // 1. DEPRESSIVE DISORDERS (Differential)
                 if (selectedDx.type === 'complex_mood') {
-                    // MDD Logic
                     const mddCore = has('mood_depressed') || has('mood_anhedonia');
                     const mddList = ['mood_depressed', 'mood_anhedonia', 's_appetite', 's_sleep', 's_agitation', 's_fatigue', 's_guilt', 's_concentrate', 's_suicide'];
                     const mddCount = mddList.filter(id => has(id)).length;
@@ -132,7 +130,6 @@
                     const exclusions = has('impairment') && has('exclusion') && has('no_mania');
                     const isMDD = mddTime && mddCore && (mddCount >= 5) && exclusions;
 
-                    // PDD Logic
                     const pddMood = has('mood_depressed') && has('dur_2years');
                     const pddList = ['s_appetite', 's_sleep', 's_fatigue', 's_selfesteem', 's_concentrate', 's_hopeless'];
                     const pddCount = pddList.filter(id => has(id)).length;
@@ -144,7 +141,6 @@
                     return { status: "NO DIAGNOSIS", color: "bg-slate-200 text-slate-500" };
                 }
 
-                // 2. SUD Logic (Alcohol & Cannabis)
                 if (selectedDx.type === 'sud') {
                     const count = selectedDx.sections[0].items.filter(i => checkedState[i.id]).length;
                     if (count >= 6) return { status: "SEVERE", color: "bg-red-600 text-white" };
@@ -153,7 +149,6 @@
                     return { status: "NO DIAGNOSIS", color: "bg-slate-200 text-slate-500" };
                 }
                 
-                // 3. General Complex Logic (GAD)
                 const evaluateSection = (section) => {
                     const count = section.items.filter(item => checkedState[item.id]).length;
                     if (section.type === 'mandatory_single') return count >= 1;
@@ -169,69 +164,99 @@
             const result = evaluateDiagnosis();
 
             return (
-                <div className="flex flex-col h-full bg-slate-100 font-sans text-slate-900 rounded-lg overflow-hidden border border-slate-300 shadow-xl">
-                    <div className="bg-slate-900 text-white p-4 flex justify-between items-center shadow-md z-10">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-indigo-500 p-2 rounded-lg text-white"><IconBook /></div>
-                            <div><h1 className="font-bold text-lg leading-tight">DSM-5 Helper</h1>
+                <div className="flex flex-col h-full w-full bg-slate-100 font-sans text-slate-900 rounded-none sm:rounded-lg overflow-hidden border-0 sm:border border-slate-300 shadow-xl">
+                    
+                    {/* Header: Responsive Stacking */}
+                    <div className="bg-slate-900 text-white p-3 sm:p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-md z-10">
+                        <div className="flex items-center gap-2.5">
+                            <div className="bg-indigo-500 p-1.5 sm:p-2 rounded-lg text-white shrink-0">
+                                <IconBook />
                             </div>
-                          
+                            <h1 className="font-bold text-base sm:text-lg leading-tight">DSM-5 Helper</h1>
+                        </div>
                         <select 
-                            className="bg-slate-800 border border-slate-700 text-sm rounded px-3 py-2 text-slate-200 outline-none focus:border-indigo-500 cursor-pointer"
+                            className="w-full sm:w-auto bg-slate-800 border border-slate-700 text-xs sm:text-sm rounded px-3 py-2 text-slate-200 outline-none focus:border-indigo-500 cursor-pointer"
                             onChange={(e) => { setSelectedDx(DIAGNOSES.find(d => d.id === e.target.value)); setCheckedState({}); }}
                             value={selectedDx.id}
                         >
                             {DIAGNOSES.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>
-                    </div> 
-                        </div>
-                        {/* Separate Disclaimer Container */}
-<div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-800 text-center font-medium">
-    <strong>Disclaimer:</strong> This tool is a prototype for educational purposes. It is not a substitute for professional clinical judgment.
-</div>
-                    <div className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-20 shadow-sm">
-                        <div className="flex items-center gap-4">
-                            <div className={`px-4 py-2 rounded-lg font-bold text-sm tracking-wide shadow-sm transition-all duration-300 ${result.color}`}>
+                    </div>
+
+                    {/* Disclaimer Bar */}
+                    <div className="bg-amber-50 border-b border-amber-200/60 px-3 py-1.5 text-[11px] sm:text-xs text-amber-800 text-center font-medium">
+                        <strong>Disclaimer:</strong> Prototype for educational purposes. Not a substitute for clinical judgment.
+                    </div>
+
+                    {/* Floating Status Bar */}
+                    <div className="bg-white border-b border-slate-200 px-4 py-2.5 sm:py-3 flex justify-between items-center sticky top-0 z-20 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-md sm:rounded-lg font-bold text-xs sm:text-sm tracking-wide shadow-sm transition-all duration-300 ${result.color}`}>
                                 {result.status}
                             </div>
                             {selectedDx.type === 'sud' && (
-                                <span className="text-slate-500 text-sm font-medium">
+                                <span className="text-slate-500 text-xs sm:text-sm font-medium">
                                     {selectedDx.sections[0].items.filter(i => checkedState[i.id]).length} Met
                                 </span>
                             )}
                         </div>
-                        <button onClick={() => setCheckedState({})} className="text-slate-400 hover:text-slate-700 transition-colors" title="Reset">
+                        <button 
+                            onClick={() => setCheckedState({})} 
+                            className="p-1.5 text-slate-400 hover:text-slate-700 active:scale-95 transition-all"
+                            title="Reset Form"
+                        >
                             <IconReset />
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+                    {/* Scrollable Content Container */}
+                    <div className="flex-1 overflow-y-auto p-2.5 sm:p-4 space-y-3 sm:space-y-4 bg-slate-50">
                         {selectedDx.sections.map((section) => (
-                            <div key={section.id} className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                            <div key={section.id} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                                 <div 
                                     onClick={() => setExpandedSections(p => ({...p, [section.id]: !p[section.id]}))}
-                                    className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors rounded-t-lg select-none"
+                                    className="p-3 sm:p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition-colors select-none"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                                    <div className="flex items-center gap-2.5 sm:gap-3 pr-2">
+                                        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[11px] sm:text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
                                             {section.id}
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-sm text-slate-700">{section.title}</h3>
-                                            {section.instruction && <p className="text-xs text-slate-400">{section.instruction}</p>}
+                                            <h3 className="font-bold text-xs sm:text-sm text-slate-700 leading-tight">{section.title}</h3>
+                                            {section.instruction && <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">{section.instruction}</p>}
                                         </div>
                                     </div>
-                                    {expandedSections[section.id] ? <IconDown /> : <IconRight />}
+                                    <div className="text-slate-400 shrink-0">
+                                        {expandedSections[section.id] ? <IconDown /> : <IconRight />}
+                                    </div>
                                 </div>
+                                
                                 {expandedSections[section.id] && (
-                                    <div className="px-4 pb-4 space-y-2 border-t border-slate-100 pt-3">
+                                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-1.5 sm:space-y-2 border-t border-slate-100 pt-2.5">
                                         {section.items.map(item => (
-                                            <label key={item.id} className={`flex items-start gap-3 p-2.5 rounded cursor-pointer transition-colors text-sm ${checkedState[item.id] ? 'bg-indigo-50/50' : 'hover:bg-slate-50'}`}>
-                                                <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${checkedState[item.id] ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'}`}>
+                                            <label 
+                                                key={item.id} 
+                                                className={`flex items-start gap-3 p-2 sm:p-2.5 rounded-md cursor-pointer transition-colors text-xs sm:text-sm active:bg-indigo-100/50 ${
+                                                    checkedState[item.id] ? 'bg-indigo-50/70' : 'hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                {/* Mobile Touch Target Box */}
+                                                <div className={`mt-0.5 w-4 h-4 sm:w-4 sm:h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
+                                                    checkedState[item.id] ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'
+                                                }`}>
                                                     {checkedState[item.id] && <span className="text-white"><IconCheck /></span>}
                                                 </div>
-                                                <input type="checkbox" className="hidden" checked={!!checkedState[item.id]} onChange={() => setCheckedState(p => ({ ...p, [item.id]: !p[item.id] }))} />
-                                                <span className={`leading-relaxed ${checkedState[item.id] ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>{item.text}</span>
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="hidden" 
+                                                    checked={!!checkedState[item.id]} 
+                                                    onChange={() => setCheckedState(p => ({ ...p, [item.id]: !p[item.id] }))} 
+                                                />
+                                                <span className={`leading-snug sm:leading-relaxed ${
+                                                    checkedState[item.id] ? 'text-slate-900 font-medium' : 'text-slate-600'
+                                                }`}>
+                                                    {item.text}
+                                                </span>
                                             </label>
                                         ))}
                                     </div>
