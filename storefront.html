@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SWGSA Storefront</title>
+  <title>SWGSA Merch Catalog</title>
   <style>
     * {
       box-sizing: border-box;
@@ -74,6 +74,12 @@
       font-size: 1.25rem;
       font-weight: 700;
       color: #2b8a3e;
+      margin-bottom: 4px;
+    }
+    .card .stock-badge {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #087f5b;
       margin-bottom: 8px;
     }
     .card .desc {
@@ -82,6 +88,19 @@
       line-height: 1.4;
       flex-grow: 1;
       margin-bottom: 16px;
+    }
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .qty-input {
+      width: 55px;
+      min-height: 44px;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
     }
     .form-container {
       background: #fff;
@@ -92,6 +111,33 @@
       margin: 0 auto;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       scroll-margin-top: 20px;
+    }
+    .cart-box {
+      background: #fdfdfd;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 0.95rem;
+    }
+    .cart-item:last-child {
+      border-bottom: none;
+    }
+    .remove-btn {
+      background: none;
+      border: none;
+      color: #e03131;
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      font-weight: 600;
     }
     .form-group {
       margin-bottom: 16px;
@@ -137,7 +183,22 @@
       padding-top: 8px;
       margin-top: 8px;
     }
-    /* Payment Link Callout Banner */
+    .stock-check-container {
+      margin: 16px 0;
+    }
+    .btn-secondary {
+      background: #4b5563;
+      color: white;
+    }
+    .btn-secondary:hover, .btn-secondary:active {
+      background: #374151;
+    }
+    .stock-msg {
+      margin-top: 8px;
+      font-size: 0.9rem;
+      text-align: center;
+      line-height: 1.4;
+    }
     .pay-banner {
       display: block;
       background: #10b981;
@@ -159,8 +220,8 @@
       background: #006aff;
       color: white;
       border: none;
-      min-height: 48px;
-      padding: 12px 16px;
+      min-height: 46px;
+      padding: 10px 16px;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
@@ -216,13 +277,14 @@
 
     <div class="form-container" id="checkoutSection">
       <h2>Complete Your Order</h2>
-      <form id="orderForm">
-        
-        <div class="form-group">
-          <label for="itemName">Selected Item</label>
-          <input type="text" id="itemName" placeholder="Click 'Select' on an item above" readonly required>
-        </div>
 
+      <!-- Multi-Item Cart Display -->
+      <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; display: block;">Selected Items:</label>
+      <div id="cartItemsContainer" class="cart-box">
+        <p id="emptyCartText" style="margin: 0; color: #777; font-size: 0.95rem; text-align: center;">Your cart is empty. Click "+ Add to Cart" on items above.</p>
+      </div>
+
+      <form id="orderForm">
         <div class="form-group">
           <label for="purchaserName">Your Full Name</label>
           <input type="text" id="purchaserName" required>
@@ -237,7 +299,7 @@
           <label for="deliveryType">Fulfillment Method</label>
           <select id="deliveryType" onchange="updateTotals()">
             <option value="Pickup">Local Pickup (Free)</option>
-            <option value="Shipping">Shipping (+$10.00)</option>
+            <option value="Shipping">Shipping ($10 first item, $5 each additional)</option>
           </select>
         </div>
 
@@ -246,23 +308,15 @@
             <label for="shippingAddress">Shipping Address</label>
             <textarea id="shippingAddress" rows="3" placeholder="Street, City, State, ZIP"></textarea>
           </div>
-
-          <div class="form-group">
-            <label for="addedShippingFee">Did you add $10 for shipping?</label>
-            <select id="addedShippingFee">
-              <option value="No" selected>No</option>
-              <option value="Yes">Yes</option>
-            </select>
-          </div>
         </div>
 
         <div class="price-box">
           <div class="price-row">
-            <span>Item Price:</span>
+            <span>Items Subtotal (<span id="totalItemCount">0</span> items):</span>
             <span>$<span id="subtotalDisplay">0.00</span></span>
           </div>
           <div class="price-row">
-            <span>Shipping:</span>
+            <span>Shipping Fee:</span>
             <span>$<span id="shippingDisplay">0.00</span></span>
           </div>
           <div class="price-row total">
@@ -270,20 +324,27 @@
             <span>$<span id="totalDisplay">0.00</span></span>
           </div>
         </div>
-  <!-- 3. Banner above submission button -->
-        <a id="payBanner" class="pay-banner" href="YOUR_SQUARE_LINK_OR_QR_PAGE_HERE" target="_blank">
-          💳 Click here to pay before submitting order($<span id="bannerTotal">0.00</span>)
+
+        <!-- Live Stock Check Feature -->
+        <div class="stock-check-container">
+          <button type="button" class="btn btn-secondary" id="checkStockBtn" onclick="verifyStockLive()">
+            🔄 Check Live Stock Availability
+          </button>
+          <div id="stockValidationMsg" class="stock-msg"></div>
+        </div>
+
+        <!-- Square Payment Link Banner -->
+        <a id="payBanner" class="pay-banner" href="https://checkout.square.site/merchant/7YKJXP8YNEQ7X/checkout/K3P576TTFPIPWKSZKZFWTF7M?src=webqr" target="_blank" onclick="handlePayClick(event)">
+          💳 Click here to send payment before submitting this order! ($<span id="bannerTotal">0.00</span>)
         </a>
+        
         <div class="form-group">
-          <label for="paidSquare">Did you complete payment via the Square code/link?</label>
-          <!-- 1. Default to No -->
+          <label for="paidSquare">Did you complete payment via the Square link above?</label>
           <select id="paidSquare" required>
             <option value="No" selected>No</option>
             <option value="Yes">Yes</option>
           </select>
         </div>
-
-      
 
         <button type="submit" class="btn" id="submitBtn">Submit Order</button>
       </form>
@@ -292,34 +353,24 @@
   </div>
 
   <script>
-    // Paste your deployed Google Apps Script Web App URL here
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbylmTgdfMe2_1UxanzgIp0TiNH3szomuIVCF0JVuql3eSwcDvA_OTUxUhYf7ftDJGCv/exec';
-    
-    // Set your base Square checkout/payment URL here
-    const SQUARE_BASE_URL = 'https://square.link/u/ZgihoK4M?src=webqr';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxYevBAdC9t5556lmy23Ffgdacy4R7YIO2NaPW0bGF4ZTDBWYypP5WM3-5ZLeYKV_H/exec';
+    const SQUARE_BASE_URL = 'https://checkout.square.site/merchant/7YKJXP8YNEQ7X/checkout/K3P576TTFPIPWKSZKZFWTF7M?src=webqr';
 
-    let currentProduct = {
-      name: '',
-      price: 0
-    };
+    let cart = [];
 
     async function fetchInventory() {
       const grid = document.getElementById('productGrid');
       try {
-        const response = await fetch(SCRIPT_URL);
+        const response = await fetch(`${SCRIPT_URL}?t=${Date.now()}`);
         const products = await response.json();
 
         grid.innerHTML = '';
-
         let visibleCount = 0;
 
-        products.forEach(item => {
-          // Filter out out-of-stock items (0, "0", false, empty)
-          const stockVal = item.inStock !== undefined ? String(item.inStock).trim().toLowerCase() : '0';
-          const isAvailable = stockVal !== '0' && stockVal !== 'false' && stockVal !== '';
+        products.forEach((item, index) => {
+          const maxStock = parseInt(item.inStock, 10) || 0;
 
-          if (!isAvailable) return;
-
+          if (maxStock <= 0) return;
           visibleCount++;
 
           const card = document.createElement('div');
@@ -327,17 +378,22 @@
 
           const priceNum = parseFloat(item.price) || 0;
           const imageTag = item.image ? `<img src="${item.image}" alt="${item.name}">` : '';
+          const safeName = item.name.replace(/'/g, "\\'");
 
           card.innerHTML = `
             <div>
               ${imageTag}
               <h3>${item.name}</h3>
               <div class="price">$${priceNum.toFixed(2)}</div>
+              <div class="stock-badge">✓ ${maxStock} in stock</div>
               <div class="desc">${item.description || ''}</div>
             </div>
-            <button type="button" class="btn" onclick="selectProduct('${item.name.replace(/'/g, "\\'")}', ${priceNum})">
-              Select Item
-            </button>
+            <div class="card-actions">
+              <input type="number" id="qty-${index}" class="qty-input" value="1" min="1" max="${maxStock}">
+              <button type="button" class="btn" onclick="addToCart('${safeName}', ${priceNum}, 'qty-${index}', ${maxStock})">
+                + Add to Cart
+              </button>
+            </div>
           `;
 
           grid.appendChild(card);
@@ -351,70 +407,228 @@
       }
     }
 
-    function selectProduct(name, price) {
-      currentProduct.name = name;
-      currentProduct.price = price;
+    function addToCart(name, price, qtyInputId, maxStock) {
+      const qtyInput = document.getElementById(qtyInputId);
+      const qty = parseInt(qtyInput.value, 10);
 
-      document.getElementById('itemName').value = name;
+      if (isNaN(qty) || qty < 1) {
+        alert('Please enter a valid quantity of at least 1.');
+        qtyInput.value = 1;
+        return;
+      }
+
+      const existingItem = cart.find(item => item.name === name);
+      const currentQtyInCart = existingItem ? existingItem.qty : 0;
+      const totalRequested = currentQtyInCart + qty;
+
+      if (totalRequested > maxStock) {
+        const availableToAdd = maxStock - currentQtyInCart;
+        if (availableToAdd <= 0) {
+          alert(`Sorry, you already have the maximum available stock (${maxStock}) for "${name}" in your cart.`);
+        } else {
+          alert(`Sorry! Only ${maxStock} available for "${name}". You currently have ${currentQtyInCart} in your cart, so you can only add ${availableToAdd} more.`);
+        }
+        qtyInput.value = Math.max(1, availableToAdd);
+        return;
+      }
+
+      if (existingItem) {
+        existingItem.qty += qty;
+      } else {
+        cart.push({ name, price, qty, maxStock });
+      }
+
+      // Reset any previous stock validation message when cart changes
+      document.getElementById('stockValidationMsg').innerText = '';
+
+      renderCart();
       updateTotals();
+    }
 
-      document.getElementById('checkoutSection').scrollIntoView({ behavior: 'smooth' });
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      document.getElementById('stockValidationMsg').innerText = '';
+      renderCart();
+      updateTotals();
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cartItemsContainer');
+      
+      if (cart.length === 0) {
+        container.innerHTML = `<p id="emptyCartText" style="margin: 0; color: #777; font-size: 0.95rem; text-align: center;">Your cart is empty. Click "+ Add to Cart" on items above.</p>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      cart.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'cart-item';
+        row.innerHTML = `
+          <div>
+            <strong>${item.name}</strong> × ${item.qty}
+            <span style="color: #666; margin-left: 8px;">($${(item.price * item.qty).toFixed(2)})</span>
+          </div>
+          <button type="button" class="remove-btn" onclick="removeFromCart(${index})">Remove</button>
+        `;
+        container.appendChild(row);
+      });
     }
 
     function updateTotals() {
       const delivery = document.getElementById('deliveryType').value;
       const isShipping = delivery === 'Shipping';
-      const shippingCost = isShipping ? 10.00 : 0.00;
-      const total = currentProduct.price + shippingCost;
+      const shippingAddressField = document.getElementById('shippingAddress');
+
+      let itemsSubtotal = 0;
+      let totalQty = 0;
+
+      cart.forEach(item => {
+        itemsSubtotal += item.price * item.qty;
+        totalQty += item.qty;
+      });
+
+      let shippingCost = 0;
+      if (isShipping && totalQty > 0) {
+        shippingCost = 10.00 + (totalQty - 1) * 5.00;
+      }
+
+      const total = itemsSubtotal + shippingCost;
 
       document.getElementById('shippingFields').style.display = isShipping ? 'block' : 'none';
-      document.getElementById('subtotalDisplay').innerText = currentProduct.price.toFixed(2);
+      if (shippingAddressField) {
+        shippingAddressField.required = isShipping;
+      }
+
+      document.getElementById('totalItemCount').innerText = totalQty;
+      document.getElementById('subtotalDisplay').innerText = itemsSubtotal.toFixed(2);
       document.getElementById('shippingDisplay').innerText = shippingCost.toFixed(2);
       document.getElementById('totalDisplay').innerText = total.toFixed(2);
       
-      // Update Payment Banner Amount and Link
       document.getElementById('bannerTotal').innerText = total.toFixed(2);
-      const payBanner = document.getElementById('payBanner');
-      payBanner.href = SQUARE_BASE_URL;
+      document.getElementById('payBanner').href = SQUARE_BASE_URL;
+    }
+
+    async function verifyStockLive() {
+      if (cart.length === 0) {
+        alert('Your cart is empty. Please add items to verify availability.');
+        return;
+      }
+
+      const checkBtn = document.getElementById('checkStockBtn');
+      const msg = document.getElementById('stockValidationMsg');
+      
+      checkBtn.disabled = true;
+      checkBtn.innerText = 'Checking real-time stock...';
+      msg.innerText = '';
+
+      try {
+        const response = await fetch(`${SCRIPT_URL}?t=${Date.now()}`);
+        const freshInventory = await response.json();
+
+        let stockIssues = [];
+
+        cart.forEach(cartItem => {
+          const matchedItem = freshInventory.find(p => p.name.trim() === cartItem.name.trim());
+          const latestStock = matchedItem ? (parseInt(matchedItem.inStock, 10) || 0) : 0;
+
+          cartItem.maxStock = latestStock;
+
+          if (latestStock === 0) {
+            stockIssues.push(`• "${cartItem.name}" is now OUT OF STOCK.`);
+          } else if (cartItem.qty > latestStock) {
+            stockIssues.push(`• "${cartItem.name}" only has ${latestStock} left in stock (you have ${cartItem.qty} in cart).`);
+          }
+        });
+
+        if (stockIssues.length > 0) {
+          msg.style.color = '#e03131';
+          msg.innerHTML = `<strong>⚠️ Stock Alert:</strong><br>${stockIssues.join('<br>')}<br>Please adjust your cart before paying.`;
+        } else {
+          msg.style.color = '#087f5b';
+          msg.innerHTML = '<strong>✅ All items are in stock and available for payment!</strong>';
+        }
+      } catch (err) {
+        msg.style.color = '#e03131';
+        msg.innerText = 'Could not verify stock right now. Please check your internet connection.';
+      } finally {
+        checkBtn.disabled = false;
+        checkBtn.innerText = '🔄 Check Live Stock Availability';
+      }
+    }
+
+    function handlePayClick(e) {
+      if (cart.length === 0) {
+        e.preventDefault();
+        alert('Please add at least one item to your cart before proceeding to payment.');
+        return;
+      }
+
+      // Check if any cart item exceeds known stock
+      const hasOverstock = cart.some(item => item.qty > (item.maxStock || 0));
+      if (hasOverstock) {
+        e.preventDefault();
+        alert('Some items in your cart exceed available stock. Please click "Check Live Stock Availability" and adjust your quantities before proceeding.');
+      }
     }
 
     document.getElementById('orderForm').addEventListener('submit', async function(e) {
       e.preventDefault();
 
-      if (!currentProduct.name) {
-        alert('Please select an item from the catalog first.');
+      if (cart.length === 0) {
+        alert('Please add at least one item to your cart before checking out.');
         return;
       }
 
-      // 2. Block submission unless "Yes" is selected for Square code
       const paidSquare = document.getElementById('paidSquare').value;
       if (paidSquare !== 'Yes') {
-        alert('Please complete your payment via the payment button and select "Yes" under the Square payment question before submitting.');
+        alert('Please complete your payment via the Square link above and select "Yes" before submitting.');
         document.getElementById('paidSquare').focus();
         return;
       }
 
       const delivery = document.getElementById('deliveryType').value;
       const isShipping = delivery === 'Shipping';
-      const shippingCost = isShipping ? 10.00 : 0.00;
-      const total = (currentProduct.price + shippingCost).toFixed(2);
+      const shippingAddress = document.getElementById('shippingAddress').value.trim();
+
+      if (isShipping && !shippingAddress) {
+        alert('Please provide a complete shipping address.');
+        document.getElementById('shippingAddress').focus();
+        return;
+      }
+
+      let itemsSubtotal = 0;
+      let totalQty = 0;
+      const structuredItems = [];
+
+      cart.forEach(item => {
+        itemsSubtotal += item.price * item.qty;
+        totalQty += item.qty;
+        structuredItems.push({
+          name: item.name,
+          price: item.price,
+          qty: item.qty
+        });
+      });
+
+      const shippingCost = (isShipping && totalQty > 0) ? (10.00 + (totalQty - 1) * 5.00) : 0.00;
+      const finalTotal = (itemsSubtotal + shippingCost).toFixed(2);
 
       const submitBtn = document.getElementById('submitBtn');
       const statusMessage = document.getElementById('statusMessage');
       
       submitBtn.disabled = true;
-      submitBtn.innerText = 'Submitting...';
+      submitBtn.innerText = 'Submitting & Updating Stock...';
       statusMessage.innerText = '';
 
       const payload = {
-        itemName: document.getElementById('itemName').value,
-        purchaserName: document.getElementById('purchaserName').value,
-        email: document.getElementById('email').value,
+        items: structuredItems,
+        purchaserName: document.getElementById('purchaserName').value.trim(),
+        email: document.getElementById('email').value.trim(),
         deliveryType: delivery,
-        shippingAddress: isShipping ? document.getElementById('shippingAddress').value : 'N/A',
-        totalPrice: total,
-        paidSquare: paidSquare,
-        addedShippingFee: isShipping ? document.getElementById('addedShippingFee').value : 'N/A'
+        shippingAddress: isShipping ? shippingAddress : 'N/A',
+        totalPrice: finalTotal,
+        paidSquare: paidSquare
       };
 
       try {
@@ -425,17 +639,16 @@
         });
 
         statusMessage.style.color = 'green';
-        statusMessage.innerText = 'Order recorded successfully!';
+        statusMessage.innerText = 'Order recorded successfully! Thank you for supporting MSW students.';
         document.getElementById('orderForm').reset();
         
-        // Reset defaults
+        cart = [];
+        renderCart();
         document.getElementById('paidSquare').value = 'No';
-        if (document.getElementById('addedShippingFee')) {
-          document.getElementById('addedShippingFee').value = 'No';
-        }
-        
-        currentProduct = { name: '', price: 0 };
+        document.getElementById('stockValidationMsg').innerText = '';
         updateTotals();
+        
+        fetchInventory();
       } catch (err) {
         statusMessage.style.color = 'red';
         statusMessage.innerText = 'There was an issue submitting your order. Please try again.';
