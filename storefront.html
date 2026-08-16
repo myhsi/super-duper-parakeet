@@ -424,13 +424,64 @@
       }
     }
 
-    function populateSizeFilter() {
+function populateSizeFilter() {
       const sizeFilter = document.getElementById('sizeFilter');
       const currentSelected = sizeFilter.value;
       
-      // Get all unique sizes
-      const uniqueSizes = [...new Set(rawProducts.map(p => p.size))].sort();
+      // Standard apparel size ranking map (lower number = smaller size)
+      const sizeOrderMap = {
+        'XXS': 1,
+        'XS': 2,
+        'S': 3,
+        'SMALL': 3,
+        'M': 4,
+        'MED': 4,
+        'MEDIUM': 4,
+        'L': 5,
+        'LG': 5,
+        'LARGE': 5,
+        'XL': 6,
+        '1XL': 6,
+        'XXL': 7,
+        '2XL': 7,
+        '3XL': 8,
+        'XXXL': 8,
+        '4XL': 9,
+        '5XL': 10,
+        'ONE SIZE': 99,
+        'OS': 99
+      };
 
+      // Get all unique sizes present in inventory
+      const uniqueSizes = [...new Set(rawProducts.map(p => p.size))];
+
+      // Custom comparator to sort from smallest to largest
+      uniqueSizes.sort((a, b) => {
+        const cleanA = a.toUpperCase().trim();
+        const cleanB = b.toUpperCase().trim();
+
+        const rankA = sizeOrderMap[cleanA];
+        const rankB = sizeOrderMap[cleanB];
+
+        // 1. Both are recognized apparel sizes
+        if (rankA !== undefined && rankB !== undefined) {
+          return rankA - rankB;
+        }
+        if (rankA !== undefined) return -1;
+        if (rankB !== undefined) return 1;
+
+        // 2. Numerical sizes (e.g. "4", "6", "8" or shoe sizes)
+        const numA = parseFloat(cleanA);
+        const numB = parseFloat(cleanB);
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numA - numB;
+        }
+
+        // 3. Fallback alphabetical sorting
+        return cleanA.localeCompare(cleanB);
+      });
+
+      // Populate dropdown
       sizeFilter.innerHTML = '<option value="ALL">All Sizes</option>';
       uniqueSizes.forEach(size => {
         const opt = document.createElement('option');
