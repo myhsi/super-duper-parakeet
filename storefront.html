@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWGSA Storefront</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 16px;
+      color: #333;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 1.75rem;
+      text-align: center;
+      margin: 8px 0 16px 0;
+    }
+    h2 {
+      font-size: 1.4rem;
+      text-align: center;
+      margin-top: 0;
+    }
+    .announcement-banner {
+      background: #eef2ff;
+      border: 1.5px solid #6366f1;
+      color: #3730a3;
+      padding: 12px 16px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      margin: 0 auto 24px auto;
+      max-width: 600px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e0e0e0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      background-color: #eee;
+    }
+    .card h3 {
+      margin: 0 0 6px 0;
+      font-size: 1.15rem;
+    }
+    .card .price {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #2b8a3e;
+      margin-bottom: 8px;
+    }
+    .card .desc {
+      font-size: 0.9rem;
+      color: #555;
+      line-height: 1.4;
+      flex-grow: 1;
+      margin-bottom: 16px;
+    }
+    .form-container {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 20px 16px;
+      max-width: 600px;
+      margin: 0 auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      scroll-margin-top: 20px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      min-height: 46px;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+      background-color: #fff;
+    }
+    .form-group textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    .price-box {
+      background: #f1f3f5;
+      border: 1px dashed #ced4da;
+      border-radius: 8px;
+      padding: 14px;
+      margin: 20px 0;
+    }
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+    .price-row.total {
+      font-weight: bold;
+      font-size: 1.15rem;
+      border-top: 1px solid #ced4da;
+      padding-top: 8px;
+      margin-top: 8px;
+    }
+    /* Payment Link Callout Banner */
+    .pay-banner {
+      display: block;
+      background: #10b981;
+      color: #ffffff;
+      text-align: center;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1.05rem;
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      transition: background 0.2s ease;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+    }
+    .pay-banner:hover, .pay-banner:active {
+      background: #059669;
+    }
+    .btn {
+      background: #006aff;
+      color: white;
+      border: none;
+      min-height: 48px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease;
+    }
+    .btn:active {
+      background: #004ecc;
+    }
+    .btn:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+    #statusMessage {
+      margin-top: 16px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+    @media (max-width: 600px) {
+      body {
+        padding: 12px 8px;
+      }
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .card {
+        padding: 14px;
+      }
+      .form-container {
+        padding: 18px 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>SWGSA Merch Catalog</h1>
+    
+    <div class="announcement-banner">
+      ✨ <strong>All proceeds support activities and convocation for MSW students!</strong>
+    </div>
+
+    <div id="productGrid" class="grid">
+      <p style="grid-column: 1 / -1; text-align: center;">Loading offerings...</p>
+    </div>
+
+    <div class="form-container" id="checkoutSection">
+      <h2>Complete Your Order</h2>
+      <form id="orderForm">
+        
+        <div class="form-group">
+          <label for="itemName">Selected Item</label>
+          <input type="text" id="itemName" placeholder="Click 'Select' on an item above" readonly required>
+        </div>
+
+        <div class="form-group">
+          <label for="purchaserName">Your Full Name</label>
+          <input type="text" id="purchaserName" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" required>
+        </div>
+
+        <div class="form-group">
+          <label for="deliveryType">Fulfillment Method</label>
+          <select id="deliveryType" onchange="updateTotals()">
+            <option value="Pickup">Local Pickup (Free)</option>
+            <option value="Shipping">Shipping (+$10.00)</option>
+          </select>
+        </div>
+
+        <div id="shippingFields" style="display: none;">
+          <div class="form-group">
+            <label for="shippingAddress">Shipping Address</label>
+            <textarea id="shippingAddress" rows="3" placeholder="Street, City, State, ZIP"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="addedShippingFee">Did you add $10 for shipping?</label>
+            <select id="addedShippingFee">
+              <option value="No" selected>No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="price-box">
+          <div class="price-row">
+            <span>Item Price:</span>
+            <span>$<span id="subtotalDisplay">0.00</span></span>
+          </div>
+          <div class="price-row">
+            <span>Shipping:</span>
+            <span>$<span id="shippingDisplay">0.00</span></span>
+          </div>
+          <div class="price-row total">
+            <span>Total:</span>
+            <span>$<span id="totalDisplay">0.00</span></span>
+          </div>
+        </div>
+  <!-- 3. Banner above submission button -->
+        <a id="payBanner" class="pay-banner" href="YOUR_SQUARE_LINK_OR_QR_PAGE_HERE" target="_blank">
+          💳 Click here to pay before submitting order($<span id="bannerTotal">0.00</span>)
+        </a>
+        <div class="form-group">
+          <label for="paidSquare">Did you complete payment via the Square code/link?</label>
+          <!-- 1. Default to No -->
+          <select id="paidSquare" required>
+            <option value="No" selected>No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+
+      
+
+        <button type="submit" class="btn" id="submitBtn">Submit Order</button>
+      </form>
+      <div id="statusMessage"></div>
+    </div>
+  </div>
+
+  <script>
+    // Paste your deployed Google Apps Script Web App URL here
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbylmTgdfMe2_1UxanzgIp0TiNH3szomuIVCF0JVuql3eSwcDvA_OTUxUhYf7ftDJGCv/exec';
+    
+    // Set your base Square checkout/payment URL here
+    const SQUARE_BASE_URL = 'https://square.link/u/ZgihoK4M?src=webqr';
+
+    let currentProduct = {
+      name: '',
+      price: 0
+    };
+
+    async function fetchInventory() {
+      const grid = document.getElementById('productGrid');
+      try {
+        const response = await fetch(SCRIPT_URL);
+        const products = await response.json();
+
+        grid.innerHTML = '';
+
+        let visibleCount = 0;
+
+        products.forEach(item => {
+          // Filter out out-of-stock items (0, "0", false, empty)
+          const stockVal = item.inStock !== undefined ? String(item.inStock).trim().toLowerCase() : '0';
+          const isAvailable = stockVal !== '0' && stockVal !== 'false' && stockVal !== '';
+
+          if (!isAvailable) return;
+
+          visibleCount++;
+
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          const priceNum = parseFloat(item.price) || 0;
+          const imageTag = item.image ? `<img src="${item.image}" alt="${item.name}">` : '';
+
+          card.innerHTML = `
+            <div>
+              ${imageTag}
+              <h3>${item.name}</h3>
+              <div class="price">$${priceNum.toFixed(2)}</div>
+              <div class="desc">${item.description || ''}</div>
+            </div>
+            <button type="button" class="btn" onclick="selectProduct('${item.name.replace(/'/g, "\\'")}', ${priceNum})">
+              Select Item
+            </button>
+          `;
+
+          grid.appendChild(card);
+        });
+
+        if (visibleCount === 0) {
+          grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">All items are currently out of stock.</p>';
+        }
+      } catch (err) {
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: red;">Failed to load catalog. Make sure the Apps Script is deployed to 'Anyone'.</p>`;
+      }
+    }
+
+    function selectProduct(name, price) {
+      currentProduct.name = name;
+      currentProduct.price = price;
+
+      document.getElementById('itemName').value = name;
+      updateTotals();
+
+      document.getElementById('checkoutSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function updateTotals() {
+      const delivery = document.getElementById('deliveryType').value;
+      const isShipping = delivery === 'Shipping';
+      const shippingCost = isShipping ? 10.00 : 0.00;
+      const total = currentProduct.price + shippingCost;
+
+      document.getElementById('shippingFields').style.display = isShipping ? 'block' : 'none';
+      document.getElementById('subtotalDisplay').innerText = currentProduct.price.toFixed(2);
+      document.getElementById('shippingDisplay').innerText = shippingCost.toFixed(2);
+      document.getElementById('totalDisplay').innerText = total.toFixed(2);
+      
+      // Update Payment Banner Amount and Link
+      document.getElementById('bannerTotal').innerText = total.toFixed(2);
+      const payBanner = document.getElementById('payBanner');
+      payBanner.href = SQUARE_BASE_URL;
+    }
+
+    document.getElementById('orderForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      if (!currentProduct.name) {
+        alert('Please select an item from the catalog first.');
+        return;
+      }
+
+      // 2. Block submission unless "Yes" is selected for Square code
+      const paidSquare = document.getElementById('paidSquare').value;
+      if (paidSquare !== 'Yes') {
+        alert('Please complete your payment via the payment button and select "Yes" under the Square payment question before submitting.');
+        document.getElementById('paidSquare').focus();
+        return;
+      }
+
+      const delivery = document.getElementById('deliveryType').value;
+      const isShipping = delivery === 'Shipping';
+      const shippingCost = isShipping ? 10.00 : 0.00;
+      const total = (currentProduct.price + shippingCost).toFixed(2);
+
+      const submitBtn = document.getElementById('submitBtn');
+      const statusMessage = document.getElementById('statusMessage');
+      
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Submitting...';
+      statusMessage.innerText = '';
+
+      const payload = {
+        itemName: document.getElementById('itemName').value,
+        purchaserName: document.getElementById('purchaserName').value,
+        email: document.getElementById('email').value,
+        deliveryType: delivery,
+        shippingAddress: isShipping ? document.getElementById('shippingAddress').value : 'N/A',
+        totalPrice: total,
+        paidSquare: paidSquare,
+        addedShippingFee: isShipping ? document.getElementById('addedShippingFee').value : 'N/A'
+      };
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+
+        statusMessage.style.color = 'green';
+        statusMessage.innerText = 'Order recorded successfully!';
+        document.getElementById('orderForm').reset();
+        
+        // Reset defaults
+        document.getElementById('paidSquare').value = 'No';
+        if (document.getElementById('addedShippingFee')) {
+          document.getElementById('addedShippingFee').value = 'No';
+        }
+        
+        currentProduct = { name: '', price: 0 };
+        updateTotals();
+      } catch (err) {
+        statusMessage.style.color = 'red';
+        statusMessage.innerText = 'There was an issue submitting your order. Please try again.';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Submit Order';
+      }
+    });
+
+    fetchInventory();
+  </script>
+</body>
+</html>
