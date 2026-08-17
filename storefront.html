@@ -783,7 +783,8 @@ function populateSizeFilter() {
       
       const payload = {
         items: structuredItems,
-        purchaserName: document.getElementById('purchaserName').value.trim(),
+        purchaserName: purchaserName,
+        payerName: finalPayerName,    // Ensure key is 'payerName' and value is 'finalPayerName'
         email: document.getElementById('email').value.trim(),
         deliveryType: delivery,
         shippingAddress: isShipping ? shippingAddress : 'N/A',
