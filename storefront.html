@@ -777,6 +777,10 @@ function populateSizeFilter() {
       submitBtn.innerText = 'Submitting & Updating Stock...';
       statusMessage.innerText = '';
 
+     const purchaserName = document.getElementById('purchaserName').value.trim();
+      const payerNameInput = document.getElementById('payerName').value.trim();
+      const finalPayerName = payerNameInput || purchaserName; // Uses purchaser name if blank
+      
       const payload = {
         items: structuredItems,
         purchaserName: document.getElementById('purchaserName').value.trim(),
