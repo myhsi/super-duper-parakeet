@@ -346,7 +346,10 @@
           <label for="email">Email Address</label>
           <input type="email" id="email" required>
         </div>
-
+<div class="form-group">
+  <label for="payerName">Name on Card / Payment Account <span style="font-weight: normal; color: #666;">(if different from above)</span></label>
+  <input type="text" id="payerName" placeholder="Leave blank if same as purchaser name">
+</div>
         <div class="form-group">
           <label for="deliveryType">Fulfillment Method</label>
           <select id="deliveryType" onchange="updateTotals()">
