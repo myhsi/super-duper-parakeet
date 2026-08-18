@@ -328,7 +328,7 @@
     </div>
 
     <div class="form-container" id="checkoutSection">
-      <h2>Complete Your Order</h2>
+      <h2>1. Choose your items and enter your info:</h2>
 
       <!-- Multi-Item Cart Display -->
       <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; display: block;">Selected Items:</label>
@@ -383,14 +383,14 @@
         <!-- Live Stock Check Feature -->
         <div class="stock-check-container">
           <button type="button" class="btn btn-secondary" id="checkStockBtn" onclick="verifyStockLive()">
-            🔄 Check Live Stock Availability
+            🔄 2. Click to check availability before sending Square payment
           </button>
           <div id="stockValidationMsg" class="stock-msg"></div>
         </div>
 
         <!-- Square Payment Link Banner -->
         <a id="payBanner" class="pay-banner" href="https://checkout.square.site/merchant/7YKJXP8YNEQ7X/checkout/K3P576TTFPIPWKSZKZFWTF7M?src=webqr" target="_blank" onclick="handlePayClick(event)">
-          💳 Click here to send payment before submitting this order! ($<span id="bannerTotal">0.00</span>)
+          💳 3. Click here to send payment and return to this browser window after! ($<span id="bannerTotal">0.00</span>)
         </a>
         
         <div class="form-group">
@@ -401,7 +401,7 @@
           </select>
         </div>
 
-        <button type="submit" class="btn" id="submitBtn">Submit Order</button>
+        <button type="submit" class="btn" id="submitBtn">4. Submit Order</button>
       </form>
       <div id="statusMessage"></div>
     </div>
