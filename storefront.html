@@ -174,19 +174,18 @@
         </div>
         <div>
           <strong class="font-bold block text-indigo-950">Next Campus Pickup Date</strong>
-          August 31st, 2026 between 11:00 AM – 3:00 PM at the SJSU School of Social Work Office.
+         October 19, 2026 between 11:00 AM – 3:00 PM at the SJSU School of Social Work Office.
         </div>
       </div>
     </div>
 
     <!-- ================= CONTROLS & DUAL FILTERS ================= -->
-    <section class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 mb-8">
-      <div>
-        <h2 class="text-xl font-bold text-slate-900">Current Offerings</h2>
-      </div>
-    </section>
+  
+    
+  
 
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-sm mb-8">
+      
       <div class="flex items-center gap-2">
         <i class="ph-bold ph-funnel text-slate-400 text-lg"></i>
         <span class="text-sm font-bold text-slate-700 uppercase tracking-wider">Filter by</span>
@@ -476,51 +475,19 @@
       }
     }
 
-    // Dynamic Filter Population: only in-stock combinations are offered
-    function populateFilters() {
-      const currentSelectedType = document.getElementById('itemTypeFilter').value || 'ALL';
-      const currentSelectedSize = document.getElementById('sizeFilter').value || 'ALL';
+ // Master apparel order map for size sorting
+    const SIZE_ORDER_MAP = {
+      'XXS': 1, 'XS': 2, 'S': 3, 'SMALL': 3, 'M': 4, 'MED': 4, 'MEDIUM': 4,
+      'L': 5, 'LG': 5, 'LARGE': 5, 'XL': 6, '1XL': 6, 'XXL': 7, '2XL': 7,
+      '3XL': 8, 'XXXL': 8, '4XL': 9, '5XL': 10, 'ONE SIZE': 99, 'OS': 99
+    };
 
-      // 1. Available Item Types: types that have in-stock items matching current size filter (if any)
-      const eligibleForType = (currentSelectedSize === 'ALL')
-        ? rawProducts
-        : rawProducts.filter(p => p.size === currentSelectedSize);
-      
-      const inStockTypes = [...new Set(eligibleForType.map(p => p.itemType))].filter(Boolean).sort();
-      
-      const itemTypeFilter = document.getElementById('itemTypeFilter');
-      itemTypeFilter.innerHTML = '<option value="ALL">All Item Types</option>';
-      inStockTypes.forEach(type => {
-        const opt = document.createElement('option');
-        opt.value = type;
-        opt.innerText = type;
-        itemTypeFilter.appendChild(opt);
-      });
-
-      if (inStockTypes.includes(currentSelectedType)) {
-        itemTypeFilter.value = currentSelectedType;
-      } else {
-        itemTypeFilter.value = 'ALL';
-      }
-
-      // 2. Available Sizes: sizes that have in-stock items matching current item type filter (if any)
-      const eligibleForSize = (itemTypeFilter.value === 'ALL')
-        ? rawProducts
-        : rawProducts.filter(p => p.itemType === itemTypeFilter.value);
-
-      const inStockSizes = [...new Set(eligibleForSize.map(p => p.size))].filter(Boolean);
-
-      const sizeOrderMap = {
-        'XXS': 1, 'XS': 2, 'S': 3, 'SMALL': 3, 'M': 4, 'MED': 4, 'MEDIUM': 4,
-        'L': 5, 'LG': 5, 'LARGE': 5, 'XL': 6, '1XL': 6, 'XXL': 7, '2XL': 7,
-        '3XL': 8, 'XXXL': 8, '4XL': 9, '5XL': 10, 'ONE SIZE': 99, 'OS': 99
-      };
-
-      inStockSizes.sort((a, b) => {
+    function sortSizes(sizes) {
+      return sizes.sort((a, b) => {
         const cleanA = a.toUpperCase().trim();
         const cleanB = b.toUpperCase().trim();
-        const rankA = sizeOrderMap[cleanA];
-        const rankB = sizeOrderMap[cleanB];
+        const rankA = SIZE_ORDER_MAP[cleanA];
+        const rankB = SIZE_ORDER_MAP[cleanB];
 
         if (rankA !== undefined && rankB !== undefined) return rankA - rankB;
         if (rankA !== undefined) return -1;
@@ -532,68 +499,69 @@
 
         return cleanA.localeCompare(cleanB);
       });
-
-      const sizeFilter = document.getElementById('sizeFilter');
-      sizeFilter.innerHTML = '<option value="ALL">All Sizes</option>';
-      inStockSizes.forEach(size => {
-        const opt = document.createElement('option');
-        opt.value = size;
-        opt.innerText = size;
-        sizeFilter.appendChild(opt);
-      });
-
-      if (inStockSizes.includes(currentSelectedSize)) {
-        sizeFilter.value = currentSelectedSize;
-      } else {
-        sizeFilter.value = 'ALL';
-      }
     }
 
-    // Cross-filtering and auto-updating dynamic options
+    // 1. Initial filter setup
+    function populateFilters() {
+      updateFilterDropdowns();
+    }
+
+    // 2. Rebuilds option nodes so mobile drum-roll pickers only display what is in stock
+    function updateFilterDropdowns() {
+      const itemTypeSelect = document.getElementById('itemTypeFilter');
+      const sizeSelect = document.getElementById('sizeFilter');
+
+      const selectedType = itemTypeSelect.value || 'ALL';
+      const selectedSize = sizeSelect.value || 'ALL';
+
+      // Find in-stock types for the currently selected size
+      const eligibleForTypes = (selectedSize === 'ALL')
+        ? rawProducts
+        : rawProducts.filter(p => p.size === selectedSize);
+      const availableTypes = [...new Set(eligibleForTypes.map(p => p.itemType))].filter(Boolean).sort();
+
+      // Find in-stock sizes for the currently selected type
+      const eligibleForSizes = (selectedType === 'ALL')
+        ? rawProducts
+        : rawProducts.filter(p => p.itemType === selectedType);
+      const availableSizes = sortSizes([...new Set(eligibleForSizes.map(p => p.size))].filter(Boolean));
+
+      // Rebuild Item Type <select>
+      itemTypeSelect.innerHTML = '<option value="ALL">All Item Types</option>';
+      availableTypes.forEach(type => {
+        const opt = document.createElement('option');
+        opt.value = type;
+        opt.textContent = type;
+        itemTypeSelect.appendChild(opt);
+      });
+      itemTypeSelect.value = availableTypes.includes(selectedType) ? selectedType : 'ALL';
+
+      // Rebuild Size <select>
+      sizeSelect.innerHTML = '<option value="ALL">All Sizes</option>';
+      availableSizes.forEach(size => {
+        const opt = document.createElement('option');
+        opt.value = size;
+        opt.textContent = size;
+        sizeSelect.appendChild(opt);
+      });
+      sizeSelect.value = availableSizes.includes(selectedSize) ? selectedSize : 'ALL';
+    }
+
+    // 3. User chooses an option from either dropdown
     function filterProducts() {
-      const selectedType = document.getElementById('itemTypeFilter').value;
-      const selectedSize = document.getElementById('sizeFilter').value;
+      updateFilterDropdowns();
+
+      const currentType = document.getElementById('itemTypeFilter').value;
+      const currentSize = document.getElementById('sizeFilter').value;
 
       const filtered = rawProducts.filter(item => {
-        const matchesType = (selectedType === 'ALL') || (item.itemType === selectedType);
-        const matchesSize = (selectedSize === 'ALL') || (item.size === selectedSize);
+        const matchesType = (currentType === 'ALL') || (item.itemType === currentType);
+        const matchesSize = (currentSize === 'ALL') || (item.size === currentSize);
         return matchesType && matchesSize;
       });
 
       renderProductGrid(filtered);
-
-      // Re-evaluate drop-downs to hide options that have 0 inventory for the cross-selected category
-      updateCrossFilterOptions(selectedType, selectedSize);
     }
-
-    function updateCrossFilterOptions(selectedType, selectedSize) {
-      // Refresh available sizes for current itemType
-      const eligibleForSize = (selectedType === 'ALL')
-        ? rawProducts
-        : rawProducts.filter(p => p.itemType === selectedType);
-
-      const inStockSizes = [...new Set(eligibleForSize.map(p => p.size))];
-      const sizeFilter = document.getElementById('sizeFilter');
-      
-      Array.from(sizeFilter.options).forEach(opt => {
-        if (opt.value === 'ALL') return;
-        opt.hidden = !inStockSizes.includes(opt.value);
-      });
-
-      // Refresh available types for current size
-      const eligibleForType = (selectedSize === 'ALL')
-        ? rawProducts
-        : rawProducts.filter(p => p.size === selectedSize);
-
-      const inStockTypes = [...new Set(eligibleForType.map(p => p.itemType))];
-      const itemTypeFilter = document.getElementById('itemTypeFilter');
-
-      Array.from(itemTypeFilter.options).forEach(opt => {
-        if (opt.value === 'ALL') return;
-        opt.hidden = !inStockTypes.includes(opt.value);
-      });
-    }
-
     // Render Product Cards
     function renderProductGrid(items) {
       const grid = document.getElementById('productGrid');
@@ -867,7 +835,7 @@
           return false;
         } else {
           msg.className = 'text-xs text-center font-bold text-emerald-700 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200';
-          msg.innerHTML = '✅ All items are confirmed in stock and reserved!';
+          msg.innerHTML = '✅ All items are confirmed in stock!';
           return true;
         }
       } catch (err) {
@@ -882,90 +850,145 @@
 
     // Step 1 Submission -> Transition to Step 2 Square Screen
     document.getElementById('orderForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
+  e.preventDefault();
 
-      if (cart.length === 0) {
-        alert('Your cart is empty.');
-        return;
-      }
+  if (cart.length === 0) {
+    alert('Your cart is empty.');
+    return;
+  }
 
-      const isStockGood = await verifyStockLive();
-      if (!isStockGood) {
-        alert('Please review current stock alerts before submitting.');
-        return;
-      }
+  const submitBtn = document.getElementById('submitBtn');
+  const msg = document.getElementById('stockValidationMsg');
 
-      const delivery = document.getElementById('deliveryType').value;
-      const isShipping = delivery === 'Shipping';
-      const shippingAddress = document.getElementById('shippingAddress').value.trim();
+  // 1. Lock the button and provide immediate feedback
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Checking stock before final submission...';
+  msg.innerText = '';
 
-      if (isShipping && !shippingAddress) {
-        alert('Please enter a shipping destination.');
-        document.getElementById('shippingAddress').focus();
-        return;
-      }
+  try {
+    // 2. Fetch fresh, live inventory directly from Google Sheets
+    const response = await fetch(`${SCRIPT_URL}?t=${Date.now()}`);
+    const freshInventory = await response.json();
 
-      let itemsSubtotal = 0;
-      let totalQty = 0;
-      const structuredItems = [];
+    let outOfStockItems = [];
+    let overRequestedItems = [];
 
-      cart.forEach(item => {
-        itemsSubtotal += item.price * item.qty;
-        totalQty += item.qty;
-        structuredItems.push({
-          name: item.name,
-          price: item.price,
-          qty: item.qty
-        });
-      });
+    // 3. Verify every item currently in the user's cart
+    cart.forEach(cartItem => {
+      const liveItem = freshInventory.find(p => p.name.trim() === cartItem.name.trim());
+      const liveStock = liveItem ? (parseInt(liveItem.inStock, 10) || 0) : 0;
+      
+      cartItem.maxStock = liveStock; // Update internal stock reference
 
-      const shippingCost = (isShipping && totalQty > 0) ? (10.00 + (totalQty - 1) * 5.00) : 0.00;
-      const finalTotal = (itemsSubtotal + shippingCost).toFixed(2);
-
-      const submitBtn = document.getElementById('submitBtn');
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Recording Order...';
-
-      const purchaserName = document.getElementById('purchaserName').value.trim();
-      const payerNameInput = document.getElementById('payerName').value.trim();
-      const finalPayerName = payerNameInput || purchaserName;
-
-      const payload = {
-        items: structuredItems,
-        purchaserName: purchaserName,
-        payerName: finalPayerName,
-        email: document.getElementById('email').value.trim(),
-        deliveryType: delivery,
-        shippingAddress: isShipping ? shippingAddress : 'N/A',
-        totalPrice: finalTotal,
-        paidSquare: 'Pending (Awaiting Square payment)'
-      };
-
-      try {
-        await fetch(SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
-
-        // Switch to Step 2 View
-        document.getElementById('cartViewStep').style.display = 'none';
-        document.getElementById('finalPaymentAmount').innerText = finalTotal;
-        document.getElementById('squareCheckoutBtn').href = SQUARE_BASE_URL;
-        document.getElementById('paymentViewStep').style.display = 'block';
-
-        // Reset Cart State
-        cart = [];
-        renderCart();
-        fetchInventory();
-
-      } catch (err) {
-        alert('There was an issue submitting your order. Please check your connection and try again.');
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="ph-bold ph-paper-plane-right text-base"></i> Submit Order Details';
+      if (liveStock === 0) {
+        outOfStockItems.push(`• "${cartItem.name}" is now OUT OF STOCK.`);
+      } else if (cartItem.qty > liveStock) {
+        overRequestedItems.push(`• "${cartItem.name}" only has ${liveStock} left (you have ${cartItem.qty} in cart).`);
       }
     });
+
+    // 4. If any item is out of stock (or exceeds available quantity), halt checkout
+    if (outOfStockItems.length > 0 || overRequestedItems.length > 0) {
+      const allErrors = [...outOfStockItems, ...overRequestedItems];
+      
+      // Prominent modal alert
+      alert(
+        `Sorry! Some items in your cart are no longer available:\n\n` +
+        allErrors.join('\n') +
+        `\n\nPlease adjust your cart before submitting your order.`
+      );
+
+      // Visual message banner in the cart drawer
+      msg.className = 'text-xs text-left font-bold text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-200 leading-relaxed';
+      msg.innerHTML = `<strong>⚠️ Stock Alert:</strong><br>${allErrors.join('<br>')}<br>Please update quantities or remove unavailable items.`;
+
+      // Refresh catalog behind the drawer and update UI
+      fetchInventory();
+      renderCart();
+      updateTotals();
+
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="ph-bold ph-paper-plane-right text-base"></i> Submit Order Details';
+      return; // Stop submission
+    }
+
+  } catch (err) {
+    alert('Could not verify real-time inventory. Please check your internet connection and try again.');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="ph-bold ph-paper-plane-right text-base"></i> Submit Order Details';
+    return;
+  }
+
+  // 5. Proceed with submission to Apps Script if all items are confirmed available
+  submitBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Recording Order...';
+
+  const delivery = document.getElementById('deliveryType').value;
+  const isShipping = delivery === 'Shipping';
+  const shippingAddress = document.getElementById('shippingAddress').value.trim();
+
+  if (isShipping && !shippingAddress) {
+    alert('Please enter a shipping destination.');
+    document.getElementById('shippingAddress').focus();
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="ph-bold ph-paper-plane-right text-base"></i> Submit Order Details';
+    return;
+  }
+
+  let itemsSubtotal = 0;
+  let totalQty = 0;
+  const structuredItems = [];
+
+  cart.forEach(item => {
+    itemsSubtotal += item.price * item.qty;
+    totalQty += item.qty;
+    structuredItems.push({
+      name: item.name,
+      price: item.price,
+      qty: item.qty
+    });
+  });
+
+  const shippingCost = (isShipping && totalQty > 0) ? (10.00 + (totalQty - 1) * 5.00) : 0.00;
+  const finalTotal = (itemsSubtotal + shippingCost).toFixed(2);
+
+  const purchaserName = document.getElementById('purchaserName').value.trim();
+  const payerNameInput = document.getElementById('payerName').value.trim();
+  const finalPayerName = payerNameInput || purchaserName;
+
+  const payload = {
+    items: structuredItems,
+    purchaserName: purchaserName,
+    payerName: finalPayerName,
+    email: document.getElementById('email').value.trim(),
+    deliveryType: delivery,
+    shippingAddress: isShipping ? shippingAddress : 'N/A',
+    totalPrice: finalTotal,
+    paidSquare: 'Pending (Awaiting Square payment)'
+  };
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+
+    document.getElementById('cartViewStep').style.display = 'none';
+    document.getElementById('finalPaymentAmount').innerText = finalTotal;
+    document.getElementById('squareCheckoutBtn').href = SQUARE_BASE_URL;
+    document.getElementById('paymentViewStep').style.display = 'block';
+
+    cart = [];
+    renderCart();
+    fetchInventory();
+
+  } catch (err) {
+    alert('There was an issue submitting your order. Please check your connection and try again.');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="ph-bold ph-paper-plane-right text-base"></i> Submit Order Details';
+  }
+});
 
     function resetDrawerAndClose() {
       document.getElementById('orderForm').reset();
