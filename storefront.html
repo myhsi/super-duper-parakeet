@@ -786,7 +786,7 @@
         row.className = 'flex items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200/80';
         row.innerHTML = `
           <div class="flex-1 min-w-0">
-            <h4 class="font-bold text-sm text-slate-900 truncate">${item.name}</h4>
+            <h4 class="font-bold text-sm text-slate-900">${item.name}</h4>
             <div class="text-xs text-slate-500 mb-2">$${item.price.toFixed(2)} each</div>
             <div class="inline-flex items-center border border-slate-200 bg-white rounded-lg overflow-hidden">
               <button type="button" onclick="adjustQty(${index}, -1)" class="w-7 h-7 flex items-center justify-center hover:bg-slate-100 text-slate-600 font-bold">−</button>
