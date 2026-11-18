@@ -333,7 +333,7 @@
               <label for="deliveryType" class="block text-xs font-bold text-slate-700 uppercase mb-1">Fulfillment Method</label>
               <select id="deliveryType" onchange="updateTotals()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition font-medium">
                 <option value="Pickup">Campus Pickup (Free)</option>
-                <option value="Shipping">Flat-Rate Shipping ($10 first item, $5 each additional)</option>
+                <option value="Shipping">Flat-Rate Shipping ($14 first item, $5 each additional)</option>
               </select>
             </div>
 
@@ -818,7 +818,7 @@
 
       let shippingCost = 0;
       if (isShipping && totalQty > 0) {
-        shippingCost = 10.00 + (totalQty - 1) * 5.00;
+        shippingCost = 14.00 + (totalQty - 1) * 5.00;
       }
 
       const total = itemsSubtotal + shippingCost;
@@ -983,7 +983,7 @@
     });
   });
 
-  const shippingCost = (isShipping && totalQty > 0) ? (10.00 + (totalQty - 1) * 5.00) : 0.00;
+  const shippingCost = (isShipping && totalQty > 0) ? (14.00 + (totalQty - 1) * 5.00) : 0.00;
   const finalTotal = (itemsSubtotal + shippingCost).toFixed(2);
 
   const purchaserName = document.getElementById('purchaserName').value.trim();
